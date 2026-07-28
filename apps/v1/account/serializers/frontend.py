@@ -1,14 +1,29 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, login
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 
 User = get_user_model()
 
-class LoginSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['email', 'password']
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        username = attrs.get('username')
+        password = attrs.get('password')
+
+        if username and password:
+            user = authenticate(username=username, password=password)
+
+            if user is None:
+                raise serializers.ValidationError('Invalid credentials')
+            else:
+                attrs['user'] = user
+                return attrs
+        else:
+            raise serializers.ValidationError('Both username and password in required')
 
 class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
