@@ -32,8 +32,8 @@ A powerful web-based music streaming platform featuring OpenAPI documentation an
 1. **Clone the repository:**
 
 ```bash
-   git clone https://github.com/2yt-code/OrainAuth.git
-   cd OrainAuth
+   git clone https://github.com/2yt-code/Surgin.git
+   cd Surgin
 ```
 
 2. **Create a Virtual Environment:**
