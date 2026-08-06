@@ -23,7 +23,7 @@ LANGUAGES = [
 # Documentation Settings
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Surgin',
-    'DESCRIPTION': 'A robust web-based music streaming',
+    'DESCRIPTION': _('A robust web-based music streaming'),
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
@@ -31,6 +31,6 @@ SPECTACULAR_SETTINGS = {
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
