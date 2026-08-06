@@ -67,13 +67,11 @@ A powerful web-based music streaming platform featuring OpenAPI documentation an
 ```bash
    daphne config.asgi:application
 ```
+For more information, visit the Daphne [GitHub repository](https://github.com/django/daphne)
 
 ## Help
 
-Any advise for common problems or issues.
-```
-command to run if program contains helper info
-```
+To read the project documentation, go to the [docs](docs) folder or start the server and visit the `schema/swagger-ui` address
 
 ## Version History
 
