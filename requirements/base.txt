@@ -6,3 +6,5 @@ django_countries==8.2.0
 dj-rest-auth==7.0.2
 django-treebeard==4.7.1
 djangorestframework-simplejwt[crypto]==5.3.1
+daphne==4.1.2
+drf-spectacular==0.30.0

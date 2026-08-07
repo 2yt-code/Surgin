@@ -49,7 +49,7 @@ A powerful web-based music streaming platform featuring OpenAPI documentation an
 3. **Install dependencies:**
 
 ```bash
-   pip install -r requirements/development.txt
+   pip install -r requirements/base.txt
 ```
 
 ### Executing program
