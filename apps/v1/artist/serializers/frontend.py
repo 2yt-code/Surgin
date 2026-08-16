@@ -2,7 +2,7 @@ from itertools import count
 from rest_framework import serializers
 
 from apps.v1.artist.models import Artist
-from utils.create_uuid import create_uuid
+
 
 class RegisterArtistAccountSerializers(serializers.ModelSerializer):
     # confirm_password = serializers.CharField(style={'input_type': 'password'}, write_only=True)
@@ -44,15 +44,7 @@ class RegisterArtistAccountSerializers(serializers.ModelSerializer):
         #     return serializers.ValidationError({'password': 'Password fields didnt match'})
         
     def create(self, validated_data):
-        uuid = create_uuid()
-
-        for _ in count(1):
-            uuid = create_uuid()
-            if not Artist.objects.filter(uuid=uuid).first():
-                break
-
         artist = Artist.objects.create(
-            uuid=uuid,
             name=validated_data.get('name'),
             first_name=validated_data.get('first_name'),
             last_name=validated_data.get('last_name'),
