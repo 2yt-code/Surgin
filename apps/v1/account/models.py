@@ -27,3 +27,14 @@ class Membership(AbstractUser):
 
     def __str__(self):
         return self.username
+
+class FingerPrint(models.Model):
+    ip_address = models.GenericIPAddressField(_("ip address"))
+    user_agent = models.TextField(_("user agent"))
+    created_at = models.DateTimeField(_("created"), auto_now_add=True)
+    trust_level = models.IntegerField(_("trust level"), default=0)
+    user_id = models.IntegerField()
+
+    class Meta:
+        verbose_name = _("fingerprint")
+        verbose_name_plural = _("fingerprints")
