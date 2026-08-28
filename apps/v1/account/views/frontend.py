@@ -10,11 +10,11 @@ from rest_framework import (
 )
 from apps.v1.account.serializers import (
     RegisterSerializer,
-    ProfileSerializer
+    ProfileSerializer,
 )
 
 
-User = get_user_model()    
+User = get_user_model()
 
 class CustomTokenRefreshView(TokenRefreshView):
     throttle_classes = (UserRateThrottle,)

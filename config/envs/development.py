@@ -28,6 +28,7 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
+# RestFramework Settings
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -36,4 +37,10 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'user': '1/minute'
     }
+}
+
+# JWT Settings
+SIMPLE_JWT = {
+    "TOKEN_OBTAIN_SERIALIZER": "apps.v1.account.serializers.frontend.CustomTokenObtainPairSerializer",
+    "TOKEN_REFRESH_SERIALIZER": "apps.v1.account.serializers.frontend.CustomTokenRefreshSerializer",
 }
