@@ -89,6 +89,9 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
             fingerprint = FingerPrint.objects.filter(key=key).first()
             if fingerprint:
                 fingerprint.last_verified_at = timezone.now()
+                # TODO Architectural Design: User credential value and its impact on authentication
+                if fingerprint.trust_score <=40: raise
+                fingerprint.trust_score += 1
             else: raise
 
             device = Device.objects.get(pk=fingerprint.pk)
