@@ -42,4 +42,5 @@ REST_FRAMEWORK = {
 # JWT Settings
 SIMPLE_JWT = {
     "TOKEN_OBTAIN_SERIALIZER": "apps.v1.account.serializers.frontend.CustomTokenObtainPairSerializer",
+    "TOKEN_REFRESH_SERIALIZER": "apps.v1.account.serializers.frontend.CustomTokenRefreshSerializer",
 }
