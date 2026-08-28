@@ -12,14 +12,12 @@ from apps.v1.account.serializers import (
     RegisterSerializer,
     ProfileSerializer,
 )
-from apps.v1.account.models import FingerPrint
-import utils
 
 
 User = get_user_model()
 
 class CustomTokenRefreshView(TokenRefreshView):
-    throttle_classes = UserRateThrottle
+    throttle_classes = (UserRateThrottle,)
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -29,16 +27,6 @@ class RegisterView(generics.CreateAPIView):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
-        user = User.objects.get(username=serializer.validated_data.get('username'))
-
-        fingerprint = FingerPrint.objects.create(
-            user_id=user.id,
-            ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=utils.fingerprint.create(request.META.get('HTTP_USER_AGENT', '')),
-            trust_level=100
-        )
-        fingerprint.save()
 
         return Response(
             {'status': _('success')}, 
