@@ -37,7 +37,7 @@ class RegisterArtistAccountSerializers(serializers.ModelSerializer):
             return serializers.ValidationError({'last_name': 'LastName already exists'})
         
         if Artist.objects.filter(email=attrs.get('email')).first():
-            return serializers.ValidationError({'email': 'Email alreay exists'})
+            return serializers.ValidationError({'email': 'Email already exists'})
         return attrs
         
         # if attrs.get('password') != attrs.get('confirm_password'):
