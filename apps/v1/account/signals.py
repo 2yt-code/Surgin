@@ -7,17 +7,8 @@ from apps.v1.account.models import FingerPrint
 
 def check_fingerprint(request):
     try:
-        device_info = utils.device_info.get(
-            request,
-            request.META.get('HTTP_USER_AGENT')
-        )
-
-        user_agent = device_info.get('user_agent')
-        browser = device_info.get('browser')
-        platform = device_info.get('platform')
-        device_type = device_info.get('device_type')
-        key = utils.fingerprint.create(f'{user_agent}:{browser}:{platform}:{device_type}')
-
+        key = utils.fingerprint.scheme_key(request)
+        
         fingerprint = FingerPrint.objects.filter(key=key).first()
         if fingerprint:
             fingerprint.last_verified_at = timezone.now()
