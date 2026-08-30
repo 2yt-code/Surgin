@@ -13,6 +13,7 @@ authentications_urls = [
     path('token-blacklist/', TokenBlacklistView.as_view(), name='token-blacklist-account'),
     path('register/', views.RegisterView.as_view(), name='register-account'),
     path('profile/', views.ProfileView.as_view(), name='profile-account'),
+    path('logout/', views.CustomDeviceLogoutView.as_view(), name='logout-account')
 ]
 
 urlpatterns = [] + authentications_urls
