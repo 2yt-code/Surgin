@@ -24,16 +24,7 @@ class CustomTokenObtainPairSerializer(TokenObtainSerializer):
         data = super().validate(attrs)
         request = self.context.get('request')
         refresh = self.get_token(self.user)
-        device_info = utils.device_info.get(
-            request, 
-            request.META.get('HTTP_USER_AGENT')
-        )
-
-        user_agent = device_info.get('user_agent')
-        browser = device_info.get('browser')
-        platform = device_info.get('platform')
-        device_type = device_info.get('device_type')
-        key = utils.fingerprint.create(f'{user_agent}:{browser}:{platform}:{device_type}')
+        key = utils.fingerprint.scheme_key(request)
 
         data["refresh"] = str(refresh)
         data["access"] = str(refresh.access_token)
@@ -41,15 +32,16 @@ class CustomTokenObtainPairSerializer(TokenObtainSerializer):
         if api_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, self.user)
 
-        device_tracker = utils.custom_device_tracker.track_device(
-            request,
-            self.user,
-            refresh
-        )
-        FingerPrint.objects.create(
-            device=device_tracker,
-            key=key,
-        ).save()
+        if not FingerPrint.objects.filter(key=key).first():
+            device_tracker = utils.custom_device_tracker.track_device(
+                request,
+                self.user,
+                refresh
+            )
+            FingerPrint.objects.create(
+                device=device_tracker,
+                key=key,
+            ).save()
 
         return data
 
