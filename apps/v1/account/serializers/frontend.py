@@ -1,8 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
 from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
-from device_tracker.models import Device
 from rest_framework import serializers, exceptions
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -13,6 +11,7 @@ from rest_framework_simplejwt.serializers import (
 
 from typing import Dict, Any
 from apps.v1.account.models import FingerPrint
+from apps.v1.account.signals import check_fingerprint
 import utils
 
 
@@ -73,43 +72,18 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
 
             data["refresh"] = str(refresh)
 
+        request = self.context.get('request')
+        fingerprint = check_fingerprint(request)
         try:
-            request = self.context.get('request')
-            device_info = utils.device_info.get(
-                request,
-                request.META.get('HTTP_USER_AGENT')
-            )
-
-            user_agent = device_info.get('user_agent')
-            browser = device_info.get('browser')
-            platform = device_info.get('platform')
-            device_type = device_info.get('device_type')
-            key = utils.fingerprint.create(f'{user_agent}:{browser}:{platform}:{device_type}')
-
-            fingerprint = FingerPrint.objects.filter(key=key).first()
             if fingerprint:
-                fingerprint.last_verified_at = timezone.now()
-                # TODO Architectural Design: User credential value and its impact on authentication
-                if fingerprint.trust_score <=40: raise
-                fingerprint.trust_score += 1
+                pass
             else: raise
-
-            device = Device.objects.get(pk=fingerprint.pk)
-            if device:
-                if not device.is_active: raise
-                device.last_seen = timezone.now()
-            else: raise
-
-            fingerprint.save()
-            device.save()
-
         except:
             raise exceptions.AuthenticationFailed(
                 detail='Token is invalid or expired',
                 code='token_not_valid'
             )
         return data
-
 
 class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
