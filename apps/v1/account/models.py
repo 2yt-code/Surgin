@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from device_tracker.models import Device
+from django.conf import settings
 
 
 class Membership(AbstractUser):
@@ -29,11 +30,28 @@ class Membership(AbstractUser):
     def __str__(self):
         return self.username
 
+class Device(models.Model):
+    uuid = models.CharField(
+        _('uuid'),
+        max_length=200,
+        unique=True
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        verbose_name=_('user')
+    )
+    ip_address = models.GenericIPAddressField(_('ip address'))
+    device_name = models.CharField(_('device name'), max_length=255)
+    is_active = models.BooleanField(_('active'), default=True)
+    last_seen = models.DateTimeField(_('last seen'), default=timezone.now)
+    created_at = models.DateTimeField(_('created'), auto_now_add=True)
+
 class FingerPrint(models.Model):
     device = models.OneToOneField(
         Device,
-        verbose_name=_("device"),
         on_delete=models.CASCADE,
+        verbose_name=_('device'),
         null=True,
         blank=True
     )
