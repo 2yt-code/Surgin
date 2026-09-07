@@ -1,53 +1,72 @@
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
-from device_tracker.views import DeviceLogoutView
-from device_tracker.models import Device
-from rest_framework_simplejwt.views import TokenRefreshView
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+from rest_framework.request import Request
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.response import Response
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.views import (
+    TokenViewBase
+)
 from rest_framework import (
     status,
     generics,
     permissions,
 )
-from apps.v1.account.models import FingerPrint
+from apps.v1.account.models import Device
+from apps.v1.account.signals import set_access_token, set_auth_cookies
 from apps.v1.account.serializers import (
     RegisterSerializer,
     ProfileSerializer,
 )
-import utils
 
 
 User = get_user_model()
 
-class CustomTokenRefreshView(TokenRefreshView):
-    throttle_classes = (UserRateThrottle,)
+class CustomTokenObtainPairView(TokenViewBase):
+    _serializer_class = api_settings.TOKEN_OBTAIN_SERIALIZER
 
-class CustomDeviceLogoutView(DeviceLogoutView):
-    def get(self, request):
-        key = utils.fingerprint.scheme_key(request)
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        serializer = self.get_serializer(data=request.data)
 
-        get_fingerprint_model = FingerPrint.objects.filter(key=key).first()
-        if get_fingerprint_model:
-            device = get_object_or_404(Device, pk=get_fingerprint_model.pk, user=request.user)
-        else: pass # TODO Resolving the "not found in database" issue
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as e:
+            raise InvalidToken(e.args[0])
 
-        if device.refresh_token_jti:
-            try:
-                token = OutstandingToken.objects.get(jti=device.refresh_token_jti)
-                BlacklistedToken.objects.get_or_create(token=token)
-            except OutstandingToken.DoesNotExist:
-                pass
-
-        get_fingerprint_model.delete()
-        device.delete()
-
-        return Response(
-            {'detail': 'device logged out'},
+        response = Response(
+            dict(
+                access=serializer.validated_data.get('refresh'), 
+                refresh=serializer.validated_data.get('access')
+            ), 
             status=status.HTTP_200_OK
         )
+
+        device_model = Device.objects.get(uuid=serializer.validated_data.get('uuid'))
+        set_auth_cookies(
+            response, 
+            serializer.validated_data.get('access'),
+            serializer.validated_data.get('refresh'),
+            device_model
+        )
+        return response
+
+class CustomTokenRefreshView(TokenViewBase):
+    throttle_classes = (UserRateThrottle,)
+    _serializer_class = api_settings.TOKEN_REFRESH_SERIALIZER
+
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        serializer = self.get_serializer(data=request.data)
+
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as e:
+            raise InvalidToken(e.args[0])
+
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
+        set_access_token(response, serializer.validated_data.get('access'))
+
+        return response
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -55,11 +74,16 @@ class RegisterView(generics.CreateAPIView):
     
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except:
+            return Response(
+                {'status': _('Faild')}
+            )
         serializer.save()
 
         return Response(
-            {'status': _('success')}, 
+            {'status': _('Success')}, 
             status=status.HTTP_201_CREATED
             )
  
