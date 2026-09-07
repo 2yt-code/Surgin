@@ -1,3 +1,5 @@
+from typing import Dict, Any
+from uuid import uuid4
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
 from django.utils.translation import gettext_lazy as _
@@ -9,9 +11,15 @@ from rest_framework_simplejwt.serializers import (
     TokenRefreshSerializer,
 )
 
-from typing import Dict, Any
-from apps.v1.account.models import FingerPrint
-from apps.v1.account.signals import check_fingerprint
+from apps.v1.account.models import FingerPrint, Device
+from apps.v1.account.signals import (
+    get_uuid, 
+    get_user_agent, 
+    login_account,
+    get_client_ip,
+    check_fingerprint,
+    get_refresh_token
+)
 import utils
 
 
@@ -23,32 +31,66 @@ class CustomTokenObtainPairSerializer(TokenObtainSerializer):
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, str]:
         data = super().validate(attrs)
         request = self.context.get('request')
-        refresh = self.get_token(self.user)
         key = utils.fingerprint.scheme_key(request)
+        uuid = get_uuid(request)
 
+        try:
+            fingerprint = FingerPrint.objects.get(
+                device__user=self.user.pk,
+                key=key
+            )
+            if uuid:
+                if not fingerprint.device.uuid == uuid:
+                    raise exceptions.AuthenticationFailed(_('Authentication failed'))
+                data['uuid'] = uuid
+            
+            else:
+                data['uuid'] = fingerprint.device.uuid
+
+            login_valid = login_account(request, uuid=data.get('uuid'))
+            if not login_valid: 
+                raise exceptions.AuthenticationFailed(_('Authentication failed'))
+
+        except FingerPrint.DoesNotExist:
+            device_model = Device.objects.create(
+                uuid=uuid4().hex,
+                user=self.user,
+                ip_address=get_client_ip(request),
+                device_name=get_user_agent(request)
+            )
+            FingerPrint.objects.create(
+                device=device_model,
+                key=key
+            )
+            data['uuid'] = device_model.uuid
+
+        refresh = self.get_token(self.user)
         data["refresh"] = str(refresh)
         data["access"] = str(refresh.access_token)
 
         if api_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, self.user)
 
-        if not FingerPrint.objects.filter(key=key).first():
-            device_tracker = utils.custom_device_tracker.track_device(
-                request,
-                self.user,
-                refresh
-            )
-            FingerPrint.objects.create(
-                device=device_tracker,
-                key=key,
-            ).save()
-
         return data
 
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):
-    def validate(self, attrs):
-        refresh = self.token_class(attrs["refresh"])
+    refresh = serializers.CharField(required=False)
 
+    def validate(self, attrs):
+        request = self.context.get('request')
+        refresh_cookie = get_refresh_token(request)
+        if not refresh_cookie:
+            refresh_cookie = attrs.get('refresh')
+
+        request = self.context.get('request')
+        fingerprint = check_fingerprint(request, uuid=get_uuid(request))
+        if not fingerprint: 
+            raise exceptions.AuthenticationFailed(
+                detail=_('Token is invalid or expired'),
+                code='token_not_valid'
+            )
+        
+        refresh = self.token_class(refresh_cookie)
         data = {"access": str(refresh.access_token)}
 
         if api_settings.ROTATE_REFRESH_TOKENS:
@@ -64,17 +106,6 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
 
             data["refresh"] = str(refresh)
 
-        request = self.context.get('request')
-        fingerprint = check_fingerprint(request)
-        try:
-            if fingerprint:
-                pass
-            else: raise
-        except:
-            raise exceptions.AuthenticationFailed(
-                detail='Token is invalid or expired',
-                code='token_not_valid'
-            )
         return data
 
 class RegisterSerializer(serializers.ModelSerializer):
