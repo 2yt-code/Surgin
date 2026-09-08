@@ -89,6 +89,13 @@ def login_account(request, *args, **kwargs):
         fingerprint_model.trust_score >=50
     ): return False
 
+    try:
+        user = kwargs.get('user')
+        user.last_login = timezone.now()
+        user.save()
+    except: 
+        return False
+        
     fingerprint_model.save(update_fields=["last_verified_at"])
     device_model.save()
 
