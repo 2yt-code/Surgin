@@ -11,8 +11,8 @@ from rest_framework_simplejwt.serializers import (
     TokenRefreshSerializer,
 )
 
-from apps.v1.account.models import FingerPrint, Device
-from apps.v1.account.signals import (
+from apps.api.v1.account.models import FingerPrint, Device
+from apps.api.v1.account.signals import (
     get_uuid, 
     get_user_agent, 
     login_account,

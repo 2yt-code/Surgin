@@ -13,9 +13,9 @@ from rest_framework import (
     generics,
     permissions,
 )
-from apps.v1.account.models import Device
-from apps.v1.account.signals import set_access_token, set_auth_cookies
-from apps.v1.account.serializers import (
+from apps.api.v1.account.models import Device
+from apps.api.v1.account.signals import set_access_token, set_auth_cookies
+from apps.api.v1.account.serializers import (
     RegisterSerializer,
     ProfileSerializer,
 )

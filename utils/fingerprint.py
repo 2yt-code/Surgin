@@ -1,12 +1,12 @@
 import hmac
 import hashlib
 from django.conf import settings
+from rest_framework.request import Request
 
-from apps.v1.account.models import FingerPrint
 import utils
 
 
-def scheme_key(request):
+def scheme_key(request: Request):
     device_info = utils.device.get_device_info(
         request,
         request.META.get('HTTP_USER_AGENT')
@@ -26,15 +26,3 @@ def create_hash(user_agent: str):
         user_agent.encode(),
         hashlib.sha256
     ).hexdigest()
-
-def compare_hash(user_agent: str, review: str):
-    fingerprint = hmac.new(
-        settings.SECRET_KEY.encode(),
-        user_agent.encode(),
-        hashlib.sha256
-    ).hexdigest()
-
-    if hmac.compare_digest(fingerprint, review):
-        return True
-    else:
-        return False

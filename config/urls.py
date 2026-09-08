@@ -20,6 +20,6 @@ doc_patterns = [
 urlpatterns = [] + i18n_urls + doc_patterns
 urlpatterns += i18n_patterns(
     # v1
-    path('v1/account/', include('apps.v1.account.urls')),
-    path('v1/artist/', include('apps.v1.artist.urls')),
+    path('api/v1/account/', include('apps.api.v1.account.urls')),
+    path('api/v1/artist/', include('apps.api.v1.artist.urls')),
 )

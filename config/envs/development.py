@@ -2,6 +2,7 @@ from .common import *
 from datetime import timedelta
 from django.utils.translation import gettext_lazy as _
 
+
 # Base Settings
 INSTALLED_APPS = [
     'daphne',
@@ -33,7 +34,7 @@ SPECTACULAR_SETTINGS = {
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'apps.v1.account.auth.CustomJWTAuthentication',
+        'apps.api.v1.account.auth.CustomJWTAuthentication',
     ],
     'DEFAULT_THROTTLE_RATES': {
         'user': '1/minute'
@@ -45,6 +46,6 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=20),
     "REFRESH_TOKEN_LIFETIME": timedelta(weeks=1),
     
-    "TOKEN_OBTAIN_SERIALIZER": "apps.v1.account.serializers.frontend.CustomTokenObtainPairSerializer",
-    "TOKEN_REFRESH_SERIALIZER": "apps.v1.account.serializers.frontend.CustomTokenRefreshSerializer",
+    "TOKEN_OBTAIN_SERIALIZER": "apps.api.v1.account.serializers.frontend.CustomTokenObtainPairSerializer",
+    "TOKEN_REFRESH_SERIALIZER": "apps.api.v1.account.serializers.frontend.CustomTokenRefreshSerializer",
 }
