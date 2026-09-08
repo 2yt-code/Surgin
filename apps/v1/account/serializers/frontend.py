@@ -47,7 +47,7 @@ class CustomTokenObtainPairSerializer(TokenObtainSerializer):
             else:
                 data['uuid'] = fingerprint.device.uuid
 
-            login_valid = login_account(request, uuid=data.get('uuid'))
+            login_valid = login_account(request, user=self.user, uuid=data.get('uuid'))
             if not login_valid: 
                 raise exceptions.AuthenticationFailed(_('Authentication failed'))
 
