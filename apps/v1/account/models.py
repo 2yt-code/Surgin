@@ -17,7 +17,8 @@ class Membership(AbstractUser):
         help_text=_("Required last name. 150 characters")
     )
     email = models.EmailField(
-        _("email address"), 
+        _("email address"),
+        max_length=254,
         help_text=_("Required email. 254 characters")
     )
     password = models.CharField(
@@ -33,7 +34,7 @@ class Membership(AbstractUser):
 class Device(models.Model):
     uuid = models.CharField(
         _('uuid'),
-        max_length=200,
+        max_length=32,
         unique=True
     )
     user = models.ForeignKey(
@@ -57,7 +58,8 @@ class FingerPrint(models.Model):
     )
     key = models.CharField(
         _("fingerprint hash"),
-        max_length=250
+        max_length=64,
+        unique=True
     )
     created_at = models.DateTimeField(
         _("created"), 
