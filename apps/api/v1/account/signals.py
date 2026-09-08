@@ -1,30 +1,32 @@
 from django.utils import timezone
+from rest_framework.request import Request
+from rest_framework.response import Response
 
-from apps.v1.account.models import FingerPrint
+from apps.api.v1.account.models import Device, FingerPrint
 import utils
 
 
 ACCESS_TOKEN_MAX_AGE = 20 * 60
 REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60
 
-def get_user_agent(request):
+def get_user_agent(request: Request):
     return request.META.get('HTTP_USER_AGENT', '')
 
-def get_uuid(request):
+def get_uuid(request: Request):
     return request.COOKIES.get('device_uuid')
 
-def get_refresh_token(request):
+def get_refresh_token(request: Request):
     return request.COOKIES.get('refresh_token')
 
-def get_access_token(request):
+def get_access_token(request: Request):
     return request.COOKIES.get('access_token')
 
-def clear_auth_cookie(response):
+def clear_auth_cookie(response: Response):
     response.delete_cookie('access_token')
     response.delete_cookie('refresh_token')
     response.delete_cookie('device_uuid')
 
-def get_client_ip(request):
+def get_client_ip(request: Request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0].strip()
@@ -32,7 +34,7 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
-def set_access_token(response, access_token):
+def set_access_token(response: Response, access_token: str):
     response.set_cookie(
         key='access_token',
         value=str(access_token),
@@ -42,7 +44,12 @@ def set_access_token(response, access_token):
         path='/',
     )
 
-def set_auth_cookies(response, access_token, refresh_token, device):
+def set_auth_cookies(
+        response: Response, 
+        access_token: str, 
+        refresh_token: str, 
+        device: Device
+):
     response.set_cookie(
         key='access_token',
         value=str(access_token),
@@ -68,7 +75,7 @@ def set_auth_cookies(response, access_token, refresh_token, device):
         path="/",
     )
 
-def login_account(request, *args, **kwargs):
+def login_account(request: Request, *args, **kwargs):
     try:
         uuid = kwargs.get('uuid')
         key = utils.fingerprint.scheme_key(request)
@@ -101,7 +108,7 @@ def login_account(request, *args, **kwargs):
 
     return True
 
-def check_fingerprint(request, *args, **kwargs):
+def check_fingerprint(request: Request, *args, **kwargs):
     try:
         uuid = kwargs.get('uuid')
         key = utils.fingerprint.scheme_key(request)

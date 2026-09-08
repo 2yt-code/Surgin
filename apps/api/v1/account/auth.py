@@ -3,7 +3,7 @@ from rest_framework.request import Request
 from rest_framework_simplejwt.authentication import JWTAuthentication, AuthUser
 from rest_framework_simplejwt.tokens import Token
 
-from apps.v1.account.signals import (
+from apps.api.v1.account.signals import (
     check_fingerprint, 
     get_access_token, 
     get_uuid

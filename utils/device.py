@@ -1,6 +1,7 @@
+from rest_framework.request import Request
 from user_agents import parse
 
-def get_device_info(request, user_agent: str):
+def get_device_info(request: Request, user_agent: str):
     user_agent = request.META.get('HTTP_USER_AGENT')
     ua = parse(user_agent)
     browser = ua.browser

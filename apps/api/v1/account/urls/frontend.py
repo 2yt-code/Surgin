@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import (
     TokenBlacklistView
 )
 
-from apps.v1.account import views
+from apps.api.v1.account import views
 
 
 authentications_urls = [

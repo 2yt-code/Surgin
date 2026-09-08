@@ -43,8 +43,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     
     # v1
-    'apps.v1.account',
-    'apps.v1.artist',
+    'apps.api.v1.account',
+    'apps.api.v1.artist',
 ]
 
 

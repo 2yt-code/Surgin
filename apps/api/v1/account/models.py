@@ -42,11 +42,23 @@ class Device(models.Model):
         on_delete=models.CASCADE,
         verbose_name=_('user')
     )
+    device_name = models.CharField(
+        _('device name'), 
+        max_length=255
+    )
+    is_active = models.BooleanField(
+        _('active'), 
+        default=True
+    )
+    last_seen = models.DateTimeField(
+        _('last seen'), 
+        default=timezone.now
+    )
+    created_at = models.DateTimeField(
+        _('created'), 
+        auto_now_add=True
+    )
     ip_address = models.GenericIPAddressField(_('ip address'))
-    device_name = models.CharField(_('device name'), max_length=255)
-    is_active = models.BooleanField(_('active'), default=True)
-    last_seen = models.DateTimeField(_('last seen'), default=timezone.now)
-    created_at = models.DateTimeField(_('created'), auto_now_add=True)
 
 class FingerPrint(models.Model):
     device = models.OneToOneField(
