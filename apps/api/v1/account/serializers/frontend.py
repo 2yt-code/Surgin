@@ -25,7 +25,13 @@ import utils
 
 User = get_user_model()
 
-class CustomTokenObtainPairSerializer(TokenObtainSerializer):
+class CustomTokenObtainSerializer(TokenObtainSerializer):
+    default_error_messages = {
+        "no_active_account": _("Login failed"),
+        "login_failed": _("Login failed")
+    }
+
+class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
     token_class = RefreshToken
 
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, str]:
@@ -41,15 +47,21 @@ class CustomTokenObtainPairSerializer(TokenObtainSerializer):
             )
             if uuid:
                 if not fingerprint.device.uuid == uuid:
-                    raise exceptions.AuthenticationFailed(_('Authentication failed'))
+                    raise exceptions.AuthenticationFailed(
+                        self.default_error_messages['login_failed'],
+                        'login_failed'
+                    )
+                
                 data['uuid'] = uuid
-            
             else:
                 data['uuid'] = fingerprint.device.uuid
 
             login_valid = login_account(request, user=self.user, uuid=data.get('uuid'))
             if not login_valid: 
-                raise exceptions.AuthenticationFailed(_('Authentication failed'))
+                raise exceptions.AuthenticationFailed(
+                    self.default_error_messages['login_failed'],
+                    'login_failed'
+                )
 
         except FingerPrint.DoesNotExist:
             device_model = Device.objects.create(

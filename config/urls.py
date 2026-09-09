@@ -7,14 +7,25 @@ from drf_spectacular.views import (
     SpectacularSwaggerView
 )
 
+
 i18n_urls = [
     path('i18n/', include('django.conf.urls.i18n'))
 ]
 
 doc_patterns = [
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path(
+        'schema/swagger-ui/', 
+        SpectacularSwaggerView.as_view(
+            url_name='schema', 
+        ), name='swagger-ui'
+    ),
+    path(
+        'schema/redoc/', 
+        SpectacularRedocView.as_view(
+            url_name='schema', 
+        ), name='redoc'
+    ),
 ]
 
 urlpatterns = [] + i18n_urls + doc_patterns
