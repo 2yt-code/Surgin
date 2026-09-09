@@ -1,7 +1,7 @@
 from itertools import count
 from rest_framework import serializers
 
-from apps.v1.artist.models import Artist
+from apps.api.v1.artist.models import Artist
 
 
 class RegisterArtistAccountSerializers(serializers.ModelSerializer):

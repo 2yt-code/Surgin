@@ -3,4 +3,4 @@ from django.apps import AppConfig
 
 class ArtistConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.v1.artist'
+    name = 'apps.api.v1.artist'

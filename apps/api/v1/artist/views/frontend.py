@@ -1,8 +1,8 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 
-from apps.v1.artist.serializers import RegisterArtistAccountSerializers
-from apps.v1.artist.models import Artist
+from apps.api.v1.artist.serializers import RegisterArtistAccountSerializers
+from apps.api.v1.artist.models import Artist
 
 class RegisterArtistAccountView(generics.CreateAPIView):
     queryset = Artist.objects.all()
