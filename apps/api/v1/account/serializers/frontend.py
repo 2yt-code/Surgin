@@ -48,8 +48,8 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
             if uuid:
                 if not fingerprint.device.uuid == uuid:
                     raise exceptions.AuthenticationFailed(
-                        self.default_error_messages['login_failed'],
-                        'login_failed'
+                        detail=self.default_error_messages['login_failed'],
+                        code='login_failed'
                     )
                 
                 data['uuid'] = uuid
@@ -59,8 +59,8 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
             login_valid = login_account(request, user=self.user, uuid=data.get('uuid'))
             if not login_valid: 
                 raise exceptions.AuthenticationFailed(
-                    self.default_error_messages['login_failed'],
-                    'login_failed'
+                    detail=self.default_error_messages['login_failed'],
+                    code='login_failed'
                 )
 
         except FingerPrint.DoesNotExist:
