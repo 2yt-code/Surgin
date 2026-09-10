@@ -67,12 +67,12 @@ def set_auth_cookies(
         path='/',
     )
     response.set_cookie(
-        key="device_uuid",
+        key='device_uuid',
         value=str(device.uuid),
         httponly=True,
         secure=True,
-        samesite="Lax",
-        path="/",
+        samesite='Lax',
+        path='/',
     )
 
 def login_account(request: Request, *args, **kwargs):
