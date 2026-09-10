@@ -15,7 +15,6 @@ from rest_framework import (
     status,
     generics,
     permissions,
-    views
 )
 
 from apps.api.v1.account.models import Device
@@ -24,7 +23,8 @@ from apps.api.v1.account.swagger import (
     SuccessResponseSerializer,
     ErrorResponseSerializer,
     TokenObtainPairResponseSerializer,
-    TokenRefreshResponseSerializer
+    TokenRefreshResponseSerializer,
+    ProfileResponseSerializer,
 )
 from apps.api.v1.account.serializers import (
     RegisterSerializer,
@@ -219,9 +219,50 @@ class RegisterView(generics.CreateAPIView):
                 code='registration_successful'
             ), status=status.HTTP_201_CREATED
         )
- 
-# TODO
-class ProfileView(views.APIView):
-    serializer_class = ProfileSerializer
+
+@extend_schema(
+    tags=['Account'],
+    summary=_('Get profile account'),
+    description=_('Retrieves the authenticated users profile information'),
+    request=ProfileSerializer,
+    responses={
+        200: OpenApiResponse(
+            response=ProfileResponseSerializer,
+            description=_('Get profile info successful'),
+            examples=[
+                OpenApiExample(
+                    name=_('Successful get profile account'),
+                    value=dict(
+                        first_name='user_firstname',
+                        last_name='user_lastname',
+                        username='user_username',
+                        email='user_email',
+                        premium='user_premium'
+                    ),
+                    response_only=True
+                )
+            ]
+        ),
+        401: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description=_('Get profile info failed'),
+            examples=[
+                OpenApiExample(
+                    name=_('Failed get profile account'),
+                    value=dict(
+                        detail=_('Authentication credentials were not provided.'),
+                        code='not_authenticated'
+                    ),
+                    response_only=True
+                )
+            ]
+        )
+    }
+)
+class ProfileView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.all()
-    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = ProfileSerializer
+
+    def get_object(self):
+        return self.request.user
