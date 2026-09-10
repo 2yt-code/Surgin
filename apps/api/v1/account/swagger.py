@@ -15,3 +15,10 @@ class TokenObtainPairResponseSerializer(serializers.Serializer):
 
 class TokenRefreshResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
+
+class ProfileResponseSerializer(serializers.Serializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    username = serializers.CharField()
+    email = serializers.EmailField()
+    premium = serializers.BooleanField()
