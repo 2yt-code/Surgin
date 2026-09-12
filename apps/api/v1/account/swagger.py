@@ -1,11 +1,7 @@
 from rest_framework import serializers
 
 
-class SuccessResponseSerializer(serializers.Serializer):
-    detail = serializers.CharField()
-    code = serializers.CharField()
-
-class ErrorResponseSerializer(serializers.Serializer):
+class SchemaResponseSerializer(serializers.Serializer):
     detail = serializers.CharField()
     code = serializers.CharField()
 
