@@ -1,10 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
+from django.db import transaction
 from rest_framework.request import Request
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenViewBase
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.settings import api_settings
 from drf_spectacular.utils import (
     extend_schema,
@@ -14,17 +16,16 @@ from drf_spectacular.utils import (
 from rest_framework import (
     status,
     generics,
-    permissions,
+    permissions
 )
 
 from apps.api.v1.account.models import Device
 from apps.api.v1.account.signals import set_access_token, set_auth_cookies
 from apps.api.v1.account.swagger import (
-    SuccessResponseSerializer,
-    ErrorResponseSerializer,
+    SchemaResponseSerializer,
     TokenObtainPairResponseSerializer,
     TokenRefreshResponseSerializer,
-    ProfileResponseSerializer,
+    ProfileResponseSerializer
 )
 from apps.api.v1.account.serializers import (
     RegisterSerializer,
@@ -32,6 +33,7 @@ from apps.api.v1.account.serializers import (
     CustomTokenObtainPairSerializer,
     CustomTokenRefreshSerializer
 )
+import utils
 
 
 User = get_user_model()
@@ -57,7 +59,7 @@ User = get_user_model()
             ]
         ),
         401: OpenApiResponse(
-            response=ErrorResponseSerializer, 
+            response=SchemaResponseSerializer, 
             description=_('Login failed'),
             examples=[
                 OpenApiExample(
@@ -128,7 +130,7 @@ class CustomTokenObtainPairView(TokenViewBase):
             ]
         ),
         401: OpenApiResponse(
-            response=ErrorResponseSerializer,
+            response=SchemaResponseSerializer,
             description=_('Refresh token faild'),
             examples=[
                 OpenApiExample(
@@ -167,7 +169,7 @@ class CustomTokenRefreshView(TokenViewBase):
     request=RegisterSerializer,
     responses={
         201: OpenApiResponse(
-            response=SuccessResponseSerializer,
+            response=SchemaResponseSerializer,
             description=_('Register successful'),
             examples=[
                 OpenApiExample(
@@ -181,7 +183,7 @@ class CustomTokenRefreshView(TokenViewBase):
             ]
         ),
         400: OpenApiResponse(
-            response=ErrorResponseSerializer,
+            response=SchemaResponseSerializer,
             description=_('Register faild'),
             examples=[
                 OpenApiExample(
@@ -244,7 +246,7 @@ class RegisterView(generics.CreateAPIView):
             ]
         ),
         401: OpenApiResponse(
-            response=ErrorResponseSerializer,
+            response=SchemaResponseSerializer,
             description=_('Get profile info failed'),
             examples=[
                 OpenApiExample(
@@ -266,3 +268,75 @@ class ProfileView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+@extend_schema(
+    tags=['Authentication'],
+    summary=_('Logout account'),
+    description=_('Invalidates the current refresh token and securely logs the user out'),
+    responses={
+        200: OpenApiResponse(
+            response=SchemaResponseSerializer,
+            description=_('Logout account successful'),
+            examples=[
+                OpenApiExample(
+                    name=_('Success logout account'),
+                    value=dict(
+                        detail=_('Logout successful'),
+                        code='logout_successful'
+                    ),
+                    response_only=True
+                )
+            ]
+        ),
+        400: OpenApiResponse(
+            response=SchemaResponseSerializer,
+            description=_('Logout account failed'),
+            examples=[
+                OpenApiExample(
+                    name=_('Failed logout account'),
+                    value=dict(
+                        detail=_('Logout failed'),
+                        code='logout_failed'
+                    ),
+                    response_only=True
+                )
+            ]
+        )
+    }
+)
+class LogoutView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = None
+
+    @transaction.atomic
+    def post(self, request):
+        key = utils.fingerprint.scheme_key(request)
+
+        try:
+            outstanding_tokens = OutstandingToken.objects.filter(
+                user=request.user
+            )
+            for token in outstanding_tokens:
+                BlacklistedToken.objects.get_or_create(
+                    token=token
+                )
+
+            Device.objects.get(
+                user=request.user, 
+                fingerprint__key=key
+            ).delete()
+
+        except:
+            return Response(
+                dict(
+                    detail=_('Logout failed'),
+                    code='logout_failed'
+                ), status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            dict(
+                detail=_('Logout successful'),
+                code='logout_successful'
+            ), status=status.HTTP_200_OK
+        )
