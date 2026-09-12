@@ -1,11 +1,14 @@
 from typing import Dict, Any
 from uuid import uuid4
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers, exceptions
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.serializers import (
     TokenObtainSerializer,
     TokenRefreshSerializer,
@@ -64,17 +67,24 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
                 )
 
         except FingerPrint.DoesNotExist:
-            device_model = Device.objects.create(
-                uuid=uuid4().hex,
-                user=self.user,
-                ip_address=get_client_ip(request),
-                device_name=get_user_agent(request)
-            )
-            FingerPrint.objects.create(
-                device=device_model,
-                key=key
-            )
-            data['uuid'] = device_model.uuid
+            try:
+                with transaction.atomic():
+                    device_model = Device.objects.create(
+                        uuid=uuid4().hex,
+                        user=self.user,
+                        ip_address=get_client_ip(request),
+                        device_name=get_user_agent(request)
+                    )
+                    FingerPrint.objects.create(
+                        device=device_model,
+                        key=key
+                    )
+                    data['uuid'] = device_model.uuid
+            except:
+                raise exceptions.AuthenticationFailed(
+                    detail=self.default_error_messages['login_failed'],
+                    code='login_failed'
+                )
 
         refresh = self.get_token(self.user)
         data["refresh"] = str(refresh)
