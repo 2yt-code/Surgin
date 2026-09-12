@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.db import transaction
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -75,6 +76,7 @@ def set_auth_cookies(
         path='/',
     )
 
+@transaction.atomic
 def login_account(request: Request, *args, **kwargs):
     try:
         uuid = kwargs.get('uuid')
@@ -104,10 +106,11 @@ def login_account(request: Request, *args, **kwargs):
         return False
         
     fingerprint_model.save(update_fields=["last_verified_at"])
-    device_model.save()
+    device_model.save(update_fields=["last_seen"])
 
     return True
 
+@transaction.atomic
 def check_fingerprint(request: Request, *args, **kwargs):
     try:
         uuid = kwargs.get('uuid')
