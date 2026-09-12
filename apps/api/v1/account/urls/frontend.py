@@ -8,6 +8,7 @@ authentications_urls = [
     path('token-refresh/', views.CustomTokenRefreshView.as_view(), name='token-refresh-account'),
     path('register/', views.RegisterView.as_view(), name='register-account'),
     path('profile/', views.ProfileView.as_view(), name='profile-account'),
+    path('logout/', views.LogoutView.as_view(), name='logout-account')
 ]
 
 urlpatterns = [] + authentications_urls
