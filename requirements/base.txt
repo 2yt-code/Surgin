@@ -8,3 +8,4 @@ daphne==4.1.2
 drf-spectacular==0.30.0
 django-device-tracker==0.3.0
 django-user-agents==0.4.0
+django-filter==24.3
