@@ -132,7 +132,7 @@ def check_fingerprint(request: Request, *args, **kwargs):
     ): fingerprint_model.trust_score += 1
     if not device_model.is_active: return False
 
-    fingerprint_model.save(update_fields=["last_verified_at"])
+    fingerprint_model.save(update_fields=["last_verified_at", "trust_score"])
     device_model.save(update_fields=["last_seen"])
 
     return True

@@ -8,7 +8,6 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers, exceptions
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.serializers import (
     TokenObtainSerializer,
     TokenRefreshSerializer,
@@ -156,7 +155,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
 
-class ProfileSerializer(serializers.ModelSerializer):
+class DashboardSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [

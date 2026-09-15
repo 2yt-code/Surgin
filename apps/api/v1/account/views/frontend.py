@@ -25,11 +25,11 @@ from apps.api.v1.account.swagger import (
     SchemaResponseSerializer,
     TokenObtainPairResponseSerializer,
     TokenRefreshResponseSerializer,
-    ProfileResponseSerializer
+    DashboardResponseSerializer
 )
 from apps.api.v1.account.serializers import (
     RegisterSerializer,
-    ProfileSerializer,
+    DashboardSerializer,
     CustomTokenObtainPairSerializer,
     CustomTokenRefreshSerializer
 )
@@ -224,16 +224,16 @@ class RegisterView(generics.CreateAPIView):
 
 @extend_schema(
     tags=['Account'],
-    summary=_('Get profile account'),
-    description=_('Retrieves the authenticated users profile information'),
-    request=ProfileSerializer,
+    summary=_('Get dashboard info account'),
+    description=_('Retrieves the authenticated users dashboard information'),
+    request=DashboardSerializer,
     responses={
         200: OpenApiResponse(
-            response=ProfileResponseSerializer,
-            description=_('Get profile info successful'),
+            response=DashboardResponseSerializer,
+            description=_('Get dashboard info successful'),
             examples=[
                 OpenApiExample(
-                    name=_('Successful get profile account'),
+                    name=_('Successful get dashboard info account'),
                     value=dict(
                         first_name='user_firstname',
                         last_name='user_lastname',
@@ -247,10 +247,10 @@ class RegisterView(generics.CreateAPIView):
         ),
         401: OpenApiResponse(
             response=SchemaResponseSerializer,
-            description=_('Get profile info failed'),
+            description=_('Get dashboard info failed'),
             examples=[
                 OpenApiExample(
-                    name=_('Failed get profile account'),
+                    name=_('Failed get dashboard info account'),
                     value=dict(
                         detail=_('Authentication credentials were not provided.'),
                         code='not_authenticated'
@@ -261,10 +261,10 @@ class RegisterView(generics.CreateAPIView):
         )
     }
 )
-class ProfileView(generics.RetrieveAPIView):
+class DashboardView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.all()
-    serializer_class = ProfileSerializer
+    serializer_class = DashboardSerializer
 
     def get_object(self):
         return self.request.user
