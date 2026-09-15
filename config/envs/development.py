@@ -32,6 +32,9 @@ SPECTACULAR_SETTINGS = {
 
 # RestFramework Settings
 REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ],
     'EXCEPTION_HANDLER': 'config.exceptions.custom_exception_handler',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -50,3 +53,6 @@ SIMPLE_JWT = {
     "TOKEN_OBTAIN_SERIALIZER": "apps.api.v1.account.serializers.frontend.CustomTokenObtainPairSerializer",
     "TOKEN_REFRESH_SERIALIZER": "apps.api.v1.account.serializers.frontend.CustomTokenRefreshSerializer",
 }
+
+# Media Root
+MEDIA_ROOT = BASE_DIR / "media"
