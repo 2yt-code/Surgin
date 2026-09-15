@@ -44,7 +44,10 @@ INSTALLED_APPS = [
     
     # v1
     'apps.api.v1.account',
-    'apps.api.v1.artist',
+    'apps.api.v1.core.artist',
+
+    # filtering
+    'django-filter'
 ]
 
 
