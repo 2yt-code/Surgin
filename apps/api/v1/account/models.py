@@ -28,8 +28,10 @@ class Membership(AbstractUser):
     )
     premium = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.username
+    class Meta:
+        verbose_name = _("membership")
+        verbose_name_plural = _("memberships")
+        db_table = 'membership'
 
 class Device(models.Model):
     uuid = models.CharField(
@@ -60,6 +62,11 @@ class Device(models.Model):
     )
     ip_address = models.GenericIPAddressField(_('ip address'))
 
+    class Meta:
+        verbose_name = _("device")
+        verbose_name_plural = _("devices")
+        db_table = 'device'
+
 class FingerPrint(models.Model):
     device = models.OneToOneField(
         Device,
@@ -87,3 +94,4 @@ class FingerPrint(models.Model):
     class Meta:
         verbose_name = _("fingerprint")
         verbose_name_plural = _("fingerprints")
+        db_table = 'fingerprint'
