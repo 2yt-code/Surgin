@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import path, include
 from django.conf.urls.i18n import i18n_patterns
 from drf_spectacular.views import (
@@ -31,6 +33,12 @@ doc_patterns = [
 urlpatterns = [] + i18n_urls + doc_patterns
 urlpatterns += i18n_patterns(
     # v1
-    path('api/v1/', include('apps.api.v1.core.urls')),
+    path('api/v1/song/', include('apps.api.v1.core.song.urls')),
     path('api/v1/account/', include('apps.api.v1.account.urls')),
+)
+
+if settings.DEBUG:
+    urlpatterns += static(
+    settings.MEDIA_URL, 
+    document_root=settings.MEDIA_ROOT
 )
