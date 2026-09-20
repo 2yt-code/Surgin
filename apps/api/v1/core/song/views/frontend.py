@@ -1,9 +1,9 @@
 from rest_framework import generics
 from django_filters import rest_framework as filters
 
-from apps.api.v1.core.filters import ExploreFilter
-from apps.api.v1.core.models import Song
-from apps.api.v1.core.serializers import SongSerializer
+from apps.api.v1.core.song.filters import ExploreFilter
+from apps.api.v1.core.song.models import Song
+from apps.api.v1.core.song.serializers import SongSerializer
 
 
 class ExploreView(generics.ListAPIView):

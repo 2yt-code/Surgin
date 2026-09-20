@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.api.v1.core import views
+from apps.api.v1.core.song import views
 
 explore_urls = [
     # path('explore/'),

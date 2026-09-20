@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.api.v1.core.models import Song
+from apps.api.v1.core.song.models import Song
 
 # TODO
 class SongSerializer(serializers.ModelSerializer):

@@ -27,11 +27,8 @@ class Song(models.Model):
     audio_file = models.FileField(
         upload_to="songs/%Y/%m/%d/"
     )
-    genre = models.CharField(
-        max_length=100,
-        blank=True
-    )
     release_date = models.DateTimeField(auto_now_add=True)
+    genre = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     play_count = models.PositiveBigIntegerField(default=0)
     like_count = models.PositiveBigIntegerField(default=0)
