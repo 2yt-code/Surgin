@@ -46,7 +46,7 @@ class Device(models.Model):
     )
     device_name = models.CharField(
         _('device name'), 
-        max_length=255
+        max_length=512
     )
     is_active = models.BooleanField(
         _('active'), 
