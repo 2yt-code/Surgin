@@ -39,7 +39,7 @@ import utils
 User = get_user_model()
 
 @extend_schema(
-    tags=["Authentication"],
+    tags=['Authentication'],
     summary=_('Login account'),
     description=_('Authenticates the user and validates their device and fingerprint before issuing access and refresh tokens'),
     request=CustomTokenObtainPairSerializer,
