@@ -21,7 +21,7 @@ from rest_framework import (
 
 from apps.api.v1.account.models import Device
 from apps.api.v1.account.signals import set_access_token, set_auth_cookies
-from apps.api.v1.account.swagger import (
+from apps.api.v1.account.swaggers import (
     SchemaResponseSerializer,
     TokenObtainPairResponseSerializer,
     TokenRefreshResponseSerializer,
