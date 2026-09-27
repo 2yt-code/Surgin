@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+from django.utils.translation import gettext_lazy as _
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -137,3 +139,46 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Database settings
+AUTH_USER_MODEL = 'account.Membership'
+
+# internationalization settings
+LOCALE_PATHS = [
+    BASE_DIR / 'locale'
+]
+
+LANGUAGES = [
+    ('en', _('English')),
+    ('fa', _('Persian'))
+]
+
+# RestFramework settings
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.CursorPagination',
+    'PAGE_SIZE': 50,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ],
+    'EXCEPTION_HANDLER': 'config.exceptions.custom_exception_handler',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'apps.api.v1.account.auth.CustomJWTAuthentication',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'user': '1/minute'
+    }
+}
+
+# JWT settings
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=20),
+    "REFRESH_TOKEN_LIFETIME": timedelta(weeks=1),
+    
+    "TOKEN_OBTAIN_SERIALIZER": "apps.api.v1.account.serializers.frontend.CustomTokenObtainPairSerializer",
+    "TOKEN_REFRESH_SERIALIZER": "apps.api.v1.account.serializers.frontend.CustomTokenRefreshSerializer",
+}
+
+# Media settings
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = 'media/'
