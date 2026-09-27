@@ -29,8 +29,8 @@ User = get_user_model()
 
 class CustomTokenObtainSerializer(TokenObtainSerializer):
     default_error_messages = {
-        "no_active_account": _("Login failed"),
-        "login_failed": _("Login failed")
+        'no_active_account': _('Login failed'),
+        'login_failed': _('Login failed')
     }
 
 class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
@@ -86,8 +86,8 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
                 )
 
         refresh = self.get_token(self.user)
-        data["refresh"] = str(refresh)
-        data["access"] = str(refresh.access_token)
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
 
         if api_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, self.user)
@@ -112,7 +112,7 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
             )
         
         refresh = self.token_class(refresh_cookie)
-        data = {"access": str(refresh.access_token)}
+        data = {'access': str(refresh.access_token)}
 
         if api_settings.ROTATE_REFRESH_TOKENS:
             if api_settings.BLACKLIST_AFTER_ROTATION:
@@ -125,7 +125,7 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
             refresh.set_exp()
             refresh.set_iat()
 
-            data["refresh"] = str(refresh)
+            data['refresh'] = str(refresh)
 
         return data
 
