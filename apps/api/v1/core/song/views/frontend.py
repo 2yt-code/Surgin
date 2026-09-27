@@ -12,7 +12,7 @@ from drf_spectacular.utils import (
 
 from apps.api.v1.core.song.models import Song
 from apps.api.v1.core.song.paginations import ExploreSearchPagination
-from apps.api.v1.core.song.swagger import (
+from apps.api.v1.core.song.swaggers import (
     ExploreSearchResponseSerializer, 
     SongNotFoundResponseSerializer, 
     SongResponseSerailizer
