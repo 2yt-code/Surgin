@@ -13,6 +13,11 @@ from drf_spectacular.utils import (
     OpenApiResponse,
     OpenApiExample
 )
+from django_rest_passwordreset.views import (
+    ResetPasswordValidateToken,
+    ResetPasswordConfirm, 
+    ResetPasswordRequestToken
+)
 from rest_framework import (
     status,
     generics,
@@ -340,3 +345,15 @@ class LogoutView(generics.GenericAPIView):
                 code='logout_successful'
             ), status=status.HTTP_200_OK
         )
+    
+@extend_schema(tags=['Authentication'])
+class CustomResetPasswordValidateToken(ResetPasswordValidateToken):
+    throttle_classes = (UserRateThrottle,)
+
+@extend_schema(tags=['Authentication'])
+class CustomResetPasswordConfirm(ResetPasswordConfirm):
+    throttle_classes = (UserRateThrottle,)
+
+@extend_schema(tags=['Authentication'])
+class CustomResetPasswordRequestToken(ResetPasswordRequestToken):
+    throttle_classes = (UserRateThrottle,)
