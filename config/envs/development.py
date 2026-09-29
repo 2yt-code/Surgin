@@ -1,59 +1,17 @@
 from .common import *
-from datetime import timedelta
 from django.utils.translation import gettext_lazy as _
 
 
-# Base Settings
+# Base settings
 INSTALLED_APPS = [
     'daphne',
     'drf_spectacular'
 ] + INSTALLED_APPS
 
-# Database Settings
-AUTH_USER_MODEL = 'account.Membership'
-
-# internationalization Settings
-LOCALE_PATHS = [
-    BASE_DIR / 'locale'
-]
-
-LANGUAGES = [
-    ('en', _('English')),
-    ('fa', _('Persian'))
-]
-
-# Documentation Settings
+# Documentation settings
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Surgin',
     'DESCRIPTION': _('A robust web-based music streaming'),
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
-
-# RestFramework Settings
-REST_FRAMEWORK = {
-    'DEFAULT_FILTER_BACKENDS': [
-        'django_filters.rest_framework.DjangoFilterBackend'
-    ],
-    'EXCEPTION_HANDLER': 'config.exceptions.custom_exception_handler',
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'apps.api.v1.account.auth.CustomJWTAuthentication',
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'user': '1/minute'
-    }
-}
-
-# JWT Settings
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=20),
-    "REFRESH_TOKEN_LIFETIME": timedelta(weeks=1),
-    
-    "TOKEN_OBTAIN_SERIALIZER": "apps.api.v1.account.serializers.frontend.CustomTokenObtainPairSerializer",
-    "TOKEN_REFRESH_SERIALIZER": "apps.api.v1.account.serializers.frontend.CustomTokenRefreshSerializer",
-}
-
-# Media Root
-MEDIA_ROOT = BASE_DIR / 'media'
-MEDIA_URL = 'media/'

@@ -7,7 +7,6 @@ class SongSerializer(serializers.ModelSerializer):
     class Meta:
         model = Song
         fields = [
-            'id',
             'title',
             'cover',
             'audio_file',
@@ -20,3 +19,7 @@ class SongSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         
+class ExploreSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Song
+        fields = ['uuid']

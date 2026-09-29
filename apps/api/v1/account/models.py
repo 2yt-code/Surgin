@@ -7,30 +7,30 @@ from django.conf import settings
 
 class Membership(AbstractUser):
     first_name = models.CharField(
-        _("first name"), 
+        _('first name'), 
         max_length=150,
-        help_text=_("Required first name. 150 characters")
+        help_text=_('Required first name. 150 characters')
     )
     last_name = models.CharField(
-        _("last name"), 
+        _('last name'), 
         max_length=150, 
-        help_text=_("Required last name. 150 characters")
+        help_text=_('Required last name. 150 characters')
     )
     email = models.EmailField(
-        _("email address"),
+        _('email address'),
         max_length=254,
-        help_text=_("Required email. 254 characters")
+        help_text=_('Required email. 254 characters')
     )
     password = models.CharField(
-        _("password"), 
+        _('password'), 
         max_length=128,
-        help_text=_("Required password. 128 characters")
+        help_text=_('Required password. 128 characters')
     )
     premium = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name = _("membership")
-        verbose_name_plural = _("memberships")
+        verbose_name = _('membership')
+        verbose_name_plural = _('memberships')
         db_table = 'membership'
 
 class Device(models.Model):
@@ -46,7 +46,7 @@ class Device(models.Model):
     )
     device_name = models.CharField(
         _('device name'), 
-        max_length=255
+        max_length=512
     )
     is_active = models.BooleanField(
         _('active'), 
@@ -63,8 +63,8 @@ class Device(models.Model):
     ip_address = models.GenericIPAddressField(_('ip address'))
 
     class Meta:
-        verbose_name = _("device")
-        verbose_name_plural = _("devices")
+        verbose_name = _('device')
+        verbose_name_plural = _('devices')
         db_table = 'device'
 
 class FingerPrint(models.Model):
@@ -76,22 +76,22 @@ class FingerPrint(models.Model):
         blank=True
     )
     key = models.CharField(
-        _("fingerprint hash"),
+        _('fingerprint hash'),
         max_length=64,
         unique=True
     )
     created_at = models.DateTimeField(
-        _("created"), 
+        _('created'), 
         auto_now_add=True
     )
     trust_score = models.IntegerField(
-        _("trust level"), 
+        _('trust level'), 
         default=50
     )
     last_verified_at = models.DateTimeField(
         auto_now_add=True
     )
     class Meta:
-        verbose_name = _("fingerprint")
-        verbose_name_plural = _("fingerprints")
+        verbose_name = _('fingerprint')
+        verbose_name_plural = _('fingerprints')
         db_table = 'fingerprint'
