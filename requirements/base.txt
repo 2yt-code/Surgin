@@ -4,3 +4,4 @@ Pillow==10.4.0
 djangorestframework-simplejwt[crypto]==5.3.1
 django-user-agents==0.4.0
 django-filter==24.3
+django-rest-passwordreset==1.6.0
