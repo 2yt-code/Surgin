@@ -51,7 +51,10 @@ INSTALLED_APPS = [
     'apps.api.v1.core.album',
 
     # filtering
-    'django_filters'
+    'django_filters',
+    
+    # password-reset
+    'django_rest_passwordreset'
 ]
 
 
