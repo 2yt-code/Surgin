@@ -15,3 +15,6 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+# Testing email
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
