@@ -40,7 +40,7 @@ authentications_urls = [
         name='reset-password-confirm'
     ),
     path(
-        'password-reset/validate_token/', 
+        'password-reset/validate-token/', 
         views.CustomResetPasswordValidateToken.as_view(), 
         name='reset-password-validate'
     )
