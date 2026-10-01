@@ -30,7 +30,9 @@ from apps.api.v1.account.swaggers import (
     SchemaResponseSerializer,
     TokenObtainPairResponseSerializer,
     TokenRefreshResponseSerializer,
-    DashboardResponseSerializer
+    DashboardResponseSerializer,
+    PasswordResetResponse,
+    PasswordResetErrorResponse
 )
 from apps.api.v1.account.serializers import (
     RegisterSerializer,
@@ -346,14 +348,84 @@ class LogoutView(generics.GenericAPIView):
             ), status=status.HTTP_200_OK
         )
     
-@extend_schema(tags=['Authentication'])
+@extend_schema(
+    tags=['Authentication'],
+    summary=_('Verify password reset token'),
+    responses={
+        200: OpenApiResponse(
+            response=PasswordResetResponse,
+            description=_('Password reset token is valid'),
+            examples=[
+                OpenApiExample(
+                    name=_('Token is valid'),
+                    value=dict(status='OK'),
+                    response_only=True
+                )
+            ]
+        ),
+        404: OpenApiResponse(
+            response=PasswordResetErrorResponse,
+            description=_('Password reset token is invalid'),
+            examples=[
+                OpenApiExample(
+                    name=_('Token is invalid'),
+                    value=dict(detail='The OTP password entered is not valid. Please check and try again.'),
+                    response_only=True
+                )
+            ]
+        )
+    }
+)
 class CustomResetPasswordValidateToken(ResetPasswordValidateToken):
-    throttle_classes = (UserRateThrottle,)
+    pass
 
-@extend_schema(tags=['Authentication'])
+@extend_schema(
+    tags=['Authentication'],
+    summary=_('Confirm password reset'),
+    responses={
+        200: OpenApiResponse(
+            response=PasswordResetResponse,
+            description=_('Password successfully reset'),
+            examples=[
+                OpenApiExample(
+                    name=_('Successful reset password'),
+                    value=dict(status='OK'),
+                    response_only=True
+                )
+            ]
+        ),
+        404: OpenApiResponse(
+            response=PasswordResetErrorResponse,
+            description=_('Password failed reset'),
+            examples=[
+                OpenApiExample(
+                    name=_('Failed reset password'),
+                    value=dict(detail='The OTP password entered is not valid. Please check and try again.'),
+                    response_only=True
+                )
+            ]
+        )
+    }
+)
 class CustomResetPasswordConfirm(ResetPasswordConfirm):
-    throttle_classes = (UserRateThrottle,)
+    pass
 
-@extend_schema(tags=['Authentication'])
+@extend_schema(
+    tags=['Authentication'],
+    summary=_('Request password reset'),
+    responses={
+        200: OpenApiResponse(
+            response=PasswordResetResponse,
+            description=_('Submit password reset form'),
+            examples=[
+                OpenApiExample(
+                    name=_('Successful Submit password reset form'),
+                    value=dict(status='OK'),
+                    response_only=True
+                )
+            ]
+        )
+    }
+)
 class CustomResetPasswordRequestToken(ResetPasswordRequestToken):
-    throttle_classes = (UserRateThrottle,)
+    pass
