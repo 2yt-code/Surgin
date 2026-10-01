@@ -19,8 +19,8 @@ class DashboardResponseSerializer(serializers.Serializer):
     email = serializers.EmailField()
     premium = serializers.BooleanField()
 
-class PasswordResetTokenResponse(serializers.Serializer):
+class PasswordResetResponse(serializers.Serializer):
     status = serializers.CharField()
 
-class PasswordResetTokenErrorResponse(serializers.Serializer):
+class PasswordResetErrorResponse(serializers.Serializer):
     detail = serializers.CharField()
