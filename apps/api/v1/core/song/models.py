@@ -2,27 +2,6 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from uuid import uuid4
 
-# from apps.api.v1.core.artist.models import Artist
-# from apps.api.v1.core.album.models import Album
-
-class SongQuerySet(models.QuerySet):
-    def published(self):
-        return self.filter(is_published=True)
-
-    def latest(self, limit=50):
-        return self.published().order_by('-release_date')[:limit]
-
-    def most_liked(self, limit=50):
-        return self.published().order_by('-like_count')[:limit]
-
-    def most_played(self, limit=50):
-        return self.published().order_by('-play_count')[:limit]
-
-    def popular(self, limit=50):
-        return self.published().order_by(
-            '-like_count',
-            '-play_count'
-        )[:limit]
 
 # TODO
 class Song(models.Model):
@@ -75,8 +54,7 @@ class Song(models.Model):
         auto_now_add=True
     )
     duration = models.DurationField(_('duration'))
-    objects = SongQuerySet.as_manager()
-
+    
     class Meta:
         verbose_name = _('song')
         verbose_name_plural = _('songs')
