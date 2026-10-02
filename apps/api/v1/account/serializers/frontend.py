@@ -99,11 +99,10 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
 
     def validate(self, attrs):
         request = self.context.get('request')
-        refresh_cookie = get_refresh_token(request)
-        if not refresh_cookie:
-            refresh_cookie = attrs.get('refresh')
+        refresh_token = get_refresh_token(request)
+        if not refresh_token:
+            refresh_token = attrs.get('refresh')
 
-        request = self.context.get('request')
         fingerprint = check_fingerprint(request, uuid=get_uuid(request))
         if not fingerprint: 
             raise exceptions.AuthenticationFailed(
@@ -111,7 +110,7 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
                 code='token_not_valid'
             )
         
-        refresh = self.token_class(refresh_cookie)
+        refresh = self.token_class(refresh_token)
         data = {'access': str(refresh.access_token)}
 
         if api_settings.ROTATE_REFRESH_TOKENS:
