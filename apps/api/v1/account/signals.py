@@ -1,9 +1,11 @@
+from django.conf import settings
 from django.utils import timezone
 from django.db import transaction
 from django.core.mail import send_mail
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from django_rest_passwordreset.signals import reset_password_token_created
+from django.core.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -12,7 +14,7 @@ import utils
 
 
 ACCESS_TOKEN_MAX_AGE = 20 * 60
-REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60
+REFRESH_TOKEN_MAX_AGE_DEVICE_UUID = 7 * 24 * 60 * 60
 
 def get_user_agent(request: Request):
     return request.META.get('HTTP_USER_AGENT', '')
@@ -66,7 +68,7 @@ def set_auth_cookies(
     response.set_cookie(
         key='refresh_token',
         value=str(refresh_token),
-        max_age=REFRESH_TOKEN_MAX_AGE,
+        max_age=REFRESH_TOKEN_MAX_AGE_DEVICE_UUID,
         httponly=True,
         samesite='Lax',
         path='/',
@@ -74,6 +76,7 @@ def set_auth_cookies(
     response.set_cookie(
         key='device_uuid',
         value=str(device.uuid),
+        max_age=REFRESH_TOKEN_MAX_AGE_DEVICE_UUID,
         httponly=True,
         secure=True,
         samesite='Lax',
