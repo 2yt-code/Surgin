@@ -1,9 +1,10 @@
-from django.urls import path, include
+from django.urls import include, path, re_path
+from rest_social_auth import views as social_views
 
 from apps.api.v1.account import views
 
 
-authentications_urls = [
+authentication_urls = [
     path(
         'login/', 
         views.CustomTokenObtainPairView.as_view(), 
@@ -43,7 +44,7 @@ authentications_urls = [
         'password-reset/validate-token/', 
         views.CustomResetPasswordValidateToken.as_view(), 
         name='reset-password-validate'
-    )
+    ),
 ]
 
-urlpatterns = [] + authentications_urls
+urlpatterns = [] + authentication_urls
