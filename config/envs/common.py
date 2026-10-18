@@ -43,7 +43,6 @@ ALLOWED_HOSTS = [
 ]
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -206,7 +205,7 @@ REST_FRAMEWORK = {
 
 # JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=20),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1.5),
     'REFRESH_TOKEN_LIFETIME': timedelta(weeks=1),
     
     'TOKEN_OBTAIN_SERIALIZER': 'apps.api.v1.account.serializers.frontend.CustomTokenObtainPairSerializer',
