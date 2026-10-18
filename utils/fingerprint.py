@@ -7,11 +7,8 @@ import utils
 
 
 def scheme_key(request: Request):
-    device_info = utils.device.get_device_info(
-        request,
-        request.META.get('HTTP_USER_AGENT')
-    )
-
+    device_info = utils.device.get_device_info(request)
+    
     user_agent = device_info.get('user_agent')
     browser = device_info.get('browser')
     platform = device_info.get('platform')
