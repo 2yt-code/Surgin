@@ -24,7 +24,9 @@ class Membership(AbstractUser):
     password = models.CharField(
         _('password'), 
         max_length=128,
-        help_text=_('Required password. 128 characters')
+        help_text=_('Required password. 128 characters'),
+        null=True,
+        blank=True
     )
     premium = models.BooleanField(default=False)
 
