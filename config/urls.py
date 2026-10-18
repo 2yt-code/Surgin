@@ -13,6 +13,7 @@ version_1 = i18n_patterns(
     path('api/v1/', include('apps.api.v1.core.urls')),
     path('api/v1/song/', include('apps.api.v1.core.song.urls')),
     path('api/v1/account/', include('apps.api.v1.account.urls')),
+    prefix_default_language=False
 )
 
 urlpatterns = [] + i18n_urls + version_1
