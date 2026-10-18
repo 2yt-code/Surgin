@@ -1,9 +1,9 @@
-from config.envs.common import DEVELOPMENT_MODE
+from django.conf import settings
 
-if not DEVELOPMENT_MODE:
+if not settings.DEVELOPMENT_MODE:
     urlpatterns = []
 
-if DEVELOPMENT_MODE:
+if settings.DEVELOPMENT_MODE:
     from django.urls import path
     from drf_spectacular.views import (
         SpectacularAPIView, 
