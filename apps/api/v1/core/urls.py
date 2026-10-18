@@ -1,5 +1,6 @@
 from django.conf import settings
 
+
 if not settings.DEVELOPMENT_MODE:
     urlpatterns = []
 
