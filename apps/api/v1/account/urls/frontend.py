@@ -1,5 +1,4 @@
-from django.urls import include, path, re_path
-from rest_social_auth import views as social_views
+from django.urls import path
 
 from apps.api.v1.account import views
 
