@@ -147,7 +147,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             'last_name', 
             'username', 
             'email', 
-            'password'
+            'password',
+            'language'
             ]
         
         extra_kwrags = {
@@ -162,5 +163,6 @@ class DashboardSerializer(serializers.ModelSerializer):
             'last_name', 
             'username', 
             'email',
-            'premium'
+            'premium',
+            'language'
         ]
