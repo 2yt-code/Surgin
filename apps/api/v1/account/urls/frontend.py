@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.api.v1.account import views
 
+app_name = 'account'
 
 authentication_urls = [
     path(

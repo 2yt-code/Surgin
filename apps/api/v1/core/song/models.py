@@ -1,16 +1,11 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from uuid import uuid4
+
+from apps.api.v1.core.models import BaseModel
 
 
 # TODO
-class Song(models.Model):
-    uuid = models.CharField(
-        _('uuid'),
-        max_length=32,
-        unique=True,
-        default=uuid4().hex
-    )
+class Song(BaseModel):
     cover = models.ImageField(
         _('cover'),
         upload_to='song_covers/',
@@ -23,27 +18,32 @@ class Song(models.Model):
     )
     title = models.CharField(
         _('title'),
-        max_length=200
+        max_length=200,
+        db_index=True
     )
     release_date = models.DateTimeField(
         _('release date'),
-        auto_now_add=True
+        auto_now_add=True,
+        db_index=True
     )
     genre = models.CharField(
         _('genre'),
-        max_length=100
+        max_length=100,
+        db_index=True
     )
     description = models.TextField(
         _('description'),
-        blank=True
+        blank=True,
     )
     play_count = models.PositiveBigIntegerField(
         _('play count'),
-        default=0
+        default=0,
+        db_index=True
     )
     like_count = models.PositiveBigIntegerField(
         _('like count'),
-        default=0
+        default=0,
+        db_index=True
     )
     is_published = models.BooleanField(
         _('is published'),
@@ -53,7 +53,10 @@ class Song(models.Model):
         _('updated at'),
         auto_now_add=True
     )
-    duration = models.DurationField(_('duration'))
+    duration = models.DurationField(
+        _('duration'),
+        db_index=True
+    )
     
     class Meta:
         verbose_name = _('song')

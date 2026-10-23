@@ -38,7 +38,8 @@ from apps.api.v1.account.serializers import (
     RegisterSerializer,
     DashboardSerializer,
     CustomTokenObtainPairSerializer,
-    CustomTokenRefreshSerializer
+    CustomTokenRefreshSerializer,
+    LogoutSerializer
 )
 import utils
 
@@ -314,7 +315,7 @@ class DashboardView(generics.RetrieveAPIView):
 )
 class LogoutView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = None
+    serializer_class = LogoutSerializer
 
     @transaction.atomic
     def post(self, request):

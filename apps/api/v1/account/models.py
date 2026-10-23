@@ -3,6 +3,11 @@ from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
+from django_countries.fields import CountryField
+
+from apps.api.v1.core.artist.models import Artist
+from apps.api.v1.core.playlist.models import Playlist
+from apps.api.v1.core.track.models import Track
 
 
 class Membership(AbstractUser):
@@ -28,7 +33,17 @@ class Membership(AbstractUser):
         null=True,
         blank=True
     )
+    # playlists = models.ManyToManyField(
+    #     Playlist,
+    #     verbose_name=_('playlists'),
+    #     related_name='preferences',
+    # )
+    language = CountryField(
+        help_text=_('Required language. Select your country')
+    ) 
     premium = models.BooleanField(default=False)
+    following = None
+    followers = None
 
     class Meta:
         verbose_name = _('membership')
@@ -93,7 +108,36 @@ class FingerPrint(models.Model):
     last_verified_at = models.DateTimeField(
         auto_now_add=True
     )
+
     class Meta:
         verbose_name = _('fingerprint')
         verbose_name_plural = _('fingerprints')
         db_table = 'fingerprint'
+
+class UserPreferences(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name=('user'),    
+    )
+    artists_favorite = models.ManyToManyField(
+        Artist,
+        verbose_name=_('artists favorite'),
+        related_name='preferences',
+    )
+    tracks_favorite = models.ManyToManyField(
+        Track,
+        verbose_name=_('tracks favorite'),
+        related_name='preferences',
+    )
+    # genre_favorite = models.JSONField(
+    #     _('genre favorite'),
+    #     max_length=50,
+    #     null=True,
+    #     blank=True
+    # )
+
+    class Meta:
+        verbose_name = _('preference')
+        verbose_name_plural = _('preferences')
+        db_table = 'user_preferences'

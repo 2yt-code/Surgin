@@ -166,3 +166,6 @@ class DashboardSerializer(serializers.ModelSerializer):
             'premium',
             'language'
         ]
+
+class LogoutSerializer(serializers.Serializer):
+    pass
