@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.api.v1.core.song import views
 
+app_name = 'song'
 
 explore_urls = [
     path(
