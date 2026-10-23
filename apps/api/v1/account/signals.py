@@ -102,6 +102,7 @@ def login_account(request: Request, *args, **kwargs):
         get_client_ip(request) == device_model.ip_address or 
         fingerprint_model.trust_score >=50
     ): return False
+    fingerprint_model.trust_score += 1
 
     try:
         user = kwargs.get('user')
@@ -110,7 +111,10 @@ def login_account(request: Request, *args, **kwargs):
     except: 
         return False
         
-    fingerprint_model.save(update_fields=['last_verified_at'])
+    fingerprint_model.save(update_fields=[
+        'last_verified_at', 
+        'trust_score'
+    ])
     device_model.save(update_fields=['last_seen'])
 
     return True
