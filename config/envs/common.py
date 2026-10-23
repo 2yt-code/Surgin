@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # rest_framework
+    # rest framework
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -61,12 +61,17 @@ INSTALLED_APPS = [
     'apps.api.v1.core.song',
     'apps.api.v1.core.artist',
     'apps.api.v1.core.album',
+    'apps.api.v1.core.playlist',
+    'apps.api.v1.core.track',
 
     # filtering
     'django_filters',
     
-    # password-reset
-    'django_rest_passwordreset'
+    # password reset
+    'django_rest_passwordreset',
+
+    # django countries
+    'django_countries'
 ]
 
 MIDDLEWARE = [
@@ -183,6 +188,9 @@ LANGUAGES = [
     ('fa', _('Persian'))
 ]
 
+# Development mode
+DEVELOPMENT_MODE = env('DEVELOPMENT_MODE') == 'true'
+
 # RestFramework settings
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.CursorPagination',
@@ -202,6 +210,12 @@ REST_FRAMEWORK = {
         'django-rest-passwordreset-confirm': '10/hour',
     }
 }
+if not DEVELOPMENT_MODE:
+    REST_FRAMEWORK.update(
+        {'DEFAULT_RENDERER_CLASSES': (
+            'rest_framework.renderers.JSONRenderer',
+        )}
+    )
 
 # JWT settings
 SIMPLE_JWT = {
@@ -215,6 +229,3 @@ SIMPLE_JWT = {
 # Media settings
 MEDIA_ROOT = BASE_DIR / env('MEDIA_ROOT')
 MEDIA_URL = env('MEDIA_URL')
-
-# Development mode
-DEVELOPMENT_MODE = env('DEVELOPMENT_MODE') == 'true'
