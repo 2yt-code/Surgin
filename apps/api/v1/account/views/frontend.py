@@ -21,7 +21,7 @@ from django_rest_passwordreset.views import (
 from rest_framework import (
     status,
     generics,
-    permissions
+    permissions,
 )
 
 from apps.api.v1.account.models import Device
@@ -229,6 +229,7 @@ class RegisterView(generics.CreateAPIView):
             ), status=status.HTTP_201_CREATED
         )
 
+# TODO
 @extend_schema(
     tags=['Account'],
     summary=_('Get dashboard info account'),
