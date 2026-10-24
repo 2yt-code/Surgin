@@ -6,11 +6,12 @@ from django.conf import settings
 from django_countries.fields import CountryField
 
 from apps.api.v1.core.artist.models import Artist
+from apps.api.v1.core.models import BaseModel
 from apps.api.v1.core.playlist.models import Playlist
 from apps.api.v1.core.track.models import Track
 
 
-class Membership(AbstractUser):
+class Membership(BaseModel, AbstractUser):
     first_name = models.CharField(
         _('first name'), 
         max_length=150,
@@ -35,14 +36,18 @@ class Membership(AbstractUser):
     )
     # playlists = models.ManyToManyField(
     #     Playlist,
-    #     verbose_name=_('playlists'),
-    #     related_name='preferences',
+    #     related_name='playlists',
+    #     blank=True
     # )
     language = CountryField(
         help_text=_('Required language. Select your country')
-    ) 
-    premium = models.BooleanField(default=False)
-    following = None
+    )
+    following = models.ManyToManyField(
+        Artist,
+        related_name='followers',
+        blank=True
+    )
+    premium = models.BooleanField(default=False)  
     followers = None
 
     class Meta:
@@ -50,7 +55,7 @@ class Membership(AbstractUser):
         verbose_name_plural = _('memberships')
         db_table = 'membership'
 
-class Device(models.Model):
+class Device(BaseModel):
     uuid = models.CharField(
         _('uuid'),
         max_length=32,
@@ -84,7 +89,7 @@ class Device(models.Model):
         verbose_name_plural = _('devices')
         db_table = 'device'
 
-class FingerPrint(models.Model):
+class FingerPrint(BaseModel):
     device = models.OneToOneField(
         Device,
         on_delete=models.CASCADE,
@@ -114,22 +119,24 @@ class FingerPrint(models.Model):
         verbose_name_plural = _('fingerprints')
         db_table = 'fingerprint'
 
-class UserPreferences(models.Model):
+class UserPreferences(BaseModel):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name=('user'),    
     )
-    artists_favorite = models.ManyToManyField(
-        Artist,
-        verbose_name=_('artists favorite'),
-        related_name='preferences',
-    )
-    tracks_favorite = models.ManyToManyField(
-        Track,
-        verbose_name=_('tracks favorite'),
-        related_name='preferences',
-    )
+    # artists_favorite = models.ManyToManyField(
+    #     Artist,
+    #     verbose_name=_('artists favorite'),
+    #     related_name='artists_favorite',
+    #     blank=True
+    # )
+    # tracks_favorite = models.ManyToManyField(
+    #     Track,
+    #     verbose_name=_('tracks favorite'),
+    #     related_name='tracks_favorite',
+    #     blank=True
+    # )
     # genre_favorite = models.JSONField(
     #     _('genre favorite'),
     #     max_length=50,
