@@ -22,6 +22,7 @@ from apps.api.v1.account.signals import (
     check_fingerprint,
     get_refresh_token
 )
+from apps.api.v1.core.artist.models import Artist
 import utils
 
 
@@ -155,7 +156,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
 
-class DashboardSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
@@ -163,9 +164,10 @@ class DashboardSerializer(serializers.ModelSerializer):
             'last_name', 
             'username', 
             'email',
-            'premium',
             'language'
         ]
 
-class LogoutSerializer(serializers.Serializer):
-    pass
+class UserFollowingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Artist
+        fields = ['name'] # TODO
