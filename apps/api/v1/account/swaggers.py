@@ -1,5 +1,5 @@
 from rest_framework import serializers
-
+from django_countries.fields import CountryField
 
 class SchemaResponseSerializer(serializers.Serializer):
     detail = serializers.CharField()
@@ -12,12 +12,13 @@ class TokenObtainPairResponseSerializer(serializers.Serializer):
 class TokenRefreshResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
 
-class DashboardResponseSerializer(serializers.Serializer):
+class UserResponseSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     username = serializers.CharField()
     email = serializers.EmailField()
     premium = serializers.BooleanField()
+    language = CountryField()
 
 class PasswordResetResponse(serializers.Serializer):
     status = serializers.CharField()
