@@ -6,45 +6,55 @@ app_name = 'account'
 
 authentication_urls = [
     path(
-        'login/', 
+        'auth/login/', 
         views.CustomTokenObtainPairView.as_view(), 
         name='login-account'
     ),
     path(
-        'token-refresh/', 
+        'auth/token-refresh/', 
         views.CustomTokenRefreshView.as_view(), 
         name='token-refresh-account'
     ),
     path(
-        'register/', 
+        'auth/register/', 
         views.RegisterView.as_view(), 
         name='register-account'
     ),
     path(
-        'dashboard/', 
-        views.DashboardView.as_view(), 
-        name='profile-account'
-    ),
-    path(
-        'logout/', 
+        'auth/logout/', 
         views.LogoutView.as_view(), 
         name='logout-account'
     ),
     path(
-        'password-reset/', 
+        'auth/password-reset/', 
         views.CustomResetPasswordRequestToken.as_view(), 
         name='reset-password-validate'
     ),
     path(
-        'password-reset/confirm/', 
+        'auth/password-reset/confirm/', 
         views.CustomResetPasswordConfirm.as_view(), 
         name='reset-password-confirm'
     ),
     path(
-        'password-reset/validate-token/', 
+        'auth/password-reset/validate-token/', 
         views.CustomResetPasswordValidateToken.as_view(), 
         name='reset-password-validate'
     ),
+    path(
+        'user/',
+        views.UserView.as_view(),
+        name='user-data-account'
+    ),
+    path(
+        'user/followings/',
+        views.UserFollowingsView.as_view(),
+        name='user-data-account'
+    ),
+    path(
+        'user/playlists/',
+        views.UserPlaylistsView.as_view(),
+        name='user-data-account'
+    )
 ]
 
 urlpatterns = [] + authentication_urls
