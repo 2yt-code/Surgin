@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import TokenViewBase
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.settings import api_settings
+from rest_framework.pagination import CursorPagination
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiResponse,
@@ -22,24 +23,26 @@ from rest_framework import (
     status,
     generics,
     permissions,
+    views
 )
 
 from apps.api.v1.account.models import Device
+from apps.api.v1.account.paginations import UserPagination
 from apps.api.v1.account.signals import set_access_token, set_auth_cookies
 from apps.api.v1.account.swaggers import (
     SchemaResponseSerializer,
     TokenObtainPairResponseSerializer,
     TokenRefreshResponseSerializer,
-    DashboardResponseSerializer,
+    UserResponseSerializer,
     PasswordResetResponse,
     PasswordResetErrorResponse
 )
 from apps.api.v1.account.serializers import (
     RegisterSerializer,
-    DashboardSerializer,
+    UserSerializer,
     CustomTokenObtainPairSerializer,
     CustomTokenRefreshSerializer,
-    LogoutSerializer
+    UserFollowingsSerializer
 )
 import utils
 
@@ -47,8 +50,8 @@ import utils
 User = get_user_model()
 
 @extend_schema(
-    tags=['Authentication'],
-    summary=_('Login account'),
+    tags=['User Authentication'],
+    summary=_('Login to your account'),
     description=_('Authenticates the user and validates their device and fingerprint before issuing access and refresh tokens'),
     request=CustomTokenObtainPairSerializer,
     responses={
@@ -57,7 +60,7 @@ User = get_user_model()
             description=_('Login successful'),
             examples=[
                 OpenApiExample(
-                    name=_('Successful login account'),
+                    name=_('Login successful'),
                     value=dict(
                         access='access_token',
                         refresh='refresh_token'
@@ -79,7 +82,7 @@ User = get_user_model()
                     response_only=True
                 ),
                 OpenApiExample(
-                    name=_('Failed login account'),
+                    name=_('Login failed'),
                     value=dict(
                         detail=_('Login failed'),
                         code='login_failed'
@@ -119,17 +122,17 @@ class CustomTokenObtainPairView(TokenViewBase):
         return response
 
 @extend_schema(
-    tags=['Authentication'],
-    summary=_('Refresh access token'),
-    description=_('Refreshes an expired access token using a valid refresh token'),
+    tags=['User Authentication'],
+    summary=_('Reset access token'),
+    description=_('Updates an expired access token using a valid refresh token'),
     request=CustomTokenRefreshSerializer,
     responses={
         200: OpenApiResponse(
             response=TokenRefreshResponseSerializer,
-            description=_('Refresh token successful'),
+            description=_('Token reset completed successfully'),
             examples=[
                 OpenApiExample(
-                    name=_('Successful refresh token'),
+                    name=_('Token updated successfully'),
                     value=dict(
                         access=_('access_token'),
                     ),
@@ -139,7 +142,7 @@ class CustomTokenObtainPairView(TokenViewBase):
         ),
         401: OpenApiResponse(
             response=SchemaResponseSerializer,
-            description=_('Refresh token faild'),
+            description=_('Token reset failed'),
             examples=[
                 OpenApiExample(
                     name=_('Invalid refresh token'),
@@ -171,19 +174,19 @@ class CustomTokenRefreshView(TokenViewBase):
         return response
 
 @extend_schema(
-    tags=['Authentication'],
-    summary=_('Register account'),
-    description=_('Creates a new user account using the provided registration information'),
+    tags=['User Authentication'],
+    summary=_('Create an account'),
+    description=_('It creates a new user account using the provided registration information'),
     request=RegisterSerializer,
     responses={
         201: OpenApiResponse(
             response=SchemaResponseSerializer,
-            description=_('Register successful'),
+            description=_('Registration completed successfully'),
             examples=[
                 OpenApiExample(
-                    name=_('Successful register account'),
+                    name=_('Account registered successfully'),
                     value=dict(
-                        detail=_('Register successful'),
+                        detail=_('Registration completed successfully'),
                         code='registration_successful'
                     ),
                     response_only=True
@@ -192,12 +195,12 @@ class CustomTokenRefreshView(TokenViewBase):
         ),
         400: OpenApiResponse(
             response=SchemaResponseSerializer,
-            description=_('Register faild'),
+            description=_('Registration was unsuccessful'),
             examples=[
                 OpenApiExample(
-                    name=_('Failed register account'),
+                    name=_('Account registration failed'),
                     value=dict(
-                        detail=_('Register failed'),
+                        detail=_('Registration was unsuccessful'),
                         code='registration_failed'
                     ),
                     response_only=True
@@ -218,31 +221,31 @@ class RegisterView(generics.CreateAPIView):
         except:
             return Response(
                 dict(
-                    detail=_('Register failed'),
+                    detail=_('Registration was unsuccessful'),
                     code='registration_failed'
                 ), status=status.HTTP_400_BAD_REQUEST
             )
 
         return Response(
             dict(
-                detail=_('Register successful'),
+                detail=_('Registration completed successfully'),
                 code='registration_successful'
             ), status=status.HTTP_201_CREATED
         )
 
 # TODO
 @extend_schema(
-    tags=['Account'],
-    summary=_('Get dashboard info account'),
-    description=_('Retrieves the authenticated users dashboard information'),
-    request=DashboardSerializer,
+    tags=['User Information'],
+    summary=_('User account information'),
+    description=_('Retrieves, Updates the authenticated users information'),
+    request=UserSerializer,
     responses={
         200: OpenApiResponse(
-            response=DashboardResponseSerializer,
-            description=_('Get dashboard info successful'),
+            response=UserResponseSerializer,
+            description=_('User information was successfully retrieved'),
             examples=[
                 OpenApiExample(
-                    name=_('Successful get dashboard info account'),
+                    name=_('Successful retrieval of user account information'),
                     value=dict(
                         first_name='user_firstname',
                         last_name='user_lastname',
@@ -256,10 +259,10 @@ class RegisterView(generics.CreateAPIView):
         ),
         401: OpenApiResponse(
             response=SchemaResponseSerializer,
-            description=_('Get dashboard info failed'),
+            description=_('Failed to retrieve user information'),
             examples=[
                 OpenApiExample(
-                    name=_('Failed get dashboard info account'),
+                    name=_('Failed to retrieve user account information'),
                     value=dict(
                         detail=_('Authentication credentials were not provided.'),
                         code='not_authenticated'
@@ -270,27 +273,27 @@ class RegisterView(generics.CreateAPIView):
         )
     }
 )
-class DashboardView(generics.RetrieveAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class UserView(generics.RetrieveUpdateAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = User.objects.all()
-    serializer_class = DashboardSerializer
+    serializer_class = UserSerializer
 
     def get_object(self):
         return self.request.user
 
 @extend_schema(
-    tags=['Authentication'],
+    tags=['User Authentication'],
     summary=_('Logout account'),
     description=_('Invalidates the current refresh token and securely logs the user out'),
     responses={
         200: OpenApiResponse(
             response=SchemaResponseSerializer,
-            description=_('Logout account successful'),
+            description=_('Account logged out successfully'),
             examples=[
                 OpenApiExample(
-                    name=_('Success logout account'),
+                    name=_('Account logged out successfully'),
                     value=dict(
-                        detail=_('Logout successful'),
+                        detail=_('Exit completed successfully'),
                         code='logout_successful'
                     ),
                     response_only=True
@@ -299,12 +302,12 @@ class DashboardView(generics.RetrieveAPIView):
         ),
         400: OpenApiResponse(
             response=SchemaResponseSerializer,
-            description=_('Logout account failed'),
+            description=_('Failed to logout of the account'),
             examples=[
                 OpenApiExample(
-                    name=_('Failed logout account'),
+                    name=_('Account logout failed'),
                     value=dict(
-                        detail=_('Logout failed'),
+                        detail=_('Logging out failed'),
                         code='logout_failed'
                     ),
                     response_only=True
@@ -313,9 +316,8 @@ class DashboardView(generics.RetrieveAPIView):
         )
     }
 )
-class LogoutView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = LogoutSerializer
+class LogoutView(views.APIView):
+    permission_classes = (permissions.IsAuthenticated,)
 
     @transaction.atomic
     def post(self, request):
@@ -338,21 +340,21 @@ class LogoutView(generics.GenericAPIView):
         except:
             return Response(
                 dict(
-                    detail=_('Logout failed'),
+                    detail=_('Failed to logout of the account'),
                     code='logout_failed'
                 ), status=status.HTTP_400_BAD_REQUEST
             )
 
         return Response(
             dict(
-                detail=_('Logout successful'),
+                detail=_('Exit completed successfully'),
                 code='logout_successful'
             ), status=status.HTTP_200_OK
         )
     
 @extend_schema(
-    tags=['Authentication'],
-    summary=_('Verify password reset token'),
+    tags=['User Authentication'],
+    summary=_('Password reset token verification'),
     responses={
         200: OpenApiResponse(
             response=PasswordResetResponse,
@@ -382,15 +384,15 @@ class CustomResetPasswordValidateToken(ResetPasswordValidateToken):
     pass
 
 @extend_schema(
-    tags=['Authentication'],
+    tags=['User Authentication'],
     summary=_('Confirm password reset'),
     responses={
         200: OpenApiResponse(
             response=PasswordResetResponse,
-            description=_('Password successfully reset'),
+            description=_('Password reset successfully'),
             examples=[
                 OpenApiExample(
-                    name=_('Successful reset password'),
+                    name=_('Password reset successful'),
                     value=dict(status='OK'),
                     response_only=True
                 )
@@ -398,10 +400,10 @@ class CustomResetPasswordValidateToken(ResetPasswordValidateToken):
         ),
         404: OpenApiResponse(
             response=PasswordResetErrorResponse,
-            description=_('Password failed reset'),
+            description=_('Password reset failed'),
             examples=[
                 OpenApiExample(
-                    name=_('Failed reset password'),
+                    name=_('Password reset failed'),
                     value=dict(detail='The OTP password entered is not valid. Please check and try again.'),
                     response_only=True
                 )
@@ -413,15 +415,15 @@ class CustomResetPasswordConfirm(ResetPasswordConfirm):
     pass
 
 @extend_schema(
-    tags=['Authentication'],
-    summary=_('Request password reset'),
+    tags=['User Authentication'],
+    summary=_('Password reset request'),
     responses={
         200: OpenApiResponse(
             response=PasswordResetResponse,
             description=_('Submit password reset form'),
             examples=[
                 OpenApiExample(
-                    name=_('Successful Submit password reset form'),
+                    name=_('Password reset form submitted successfully'),
                     value=dict(status='OK'),
                     response_only=True
                 )
@@ -431,3 +433,30 @@ class CustomResetPasswordConfirm(ResetPasswordConfirm):
 )
 class CustomResetPasswordRequestToken(ResetPasswordRequestToken):
     pass
+
+@extend_schema(tags=['User Information'])
+class UserFollowingsView(views.APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        try:
+            artists = request.user.following.all()
+            paginator = UserPagination()
+            page = paginator.paginate_queryset(
+                artists, 
+                request, 
+                view=self
+            )
+            serializer = UserFollowingsSerializer(
+                instance=page, 
+                many=True
+            )
+            return Response(
+                serializer.data, 
+                status=status.HTTP_200_OK
+            )
+        except:
+            raise Response(
+                dict(detail='Error found for followings'),
+                status=status.HTTP_404_NOT_FOUND
+            )
