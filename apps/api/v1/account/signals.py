@@ -107,9 +107,8 @@ def login_account(request: Request, *args, **kwargs):
     try:
         user = kwargs.get('user')
         user.last_login = timezone.now()
-        user.save()
-    except: 
-        return False
+        user.save(update_fields=['last_login'])
+    except: return False
         
     fingerprint_model.save(update_fields=[
         'last_verified_at', 
