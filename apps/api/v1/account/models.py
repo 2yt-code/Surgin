@@ -25,7 +25,8 @@ class Membership(BaseModel, AbstractUser):
     email = models.EmailField(
         _('email address'),
         max_length=254,
-        help_text=_('Required email. 254 characters')
+        help_text=_('Required email. 254 characters'),
+        unique=True
     )
     password = models.CharField(
         _('password'), 
@@ -34,21 +35,30 @@ class Membership(BaseModel, AbstractUser):
         null=True,
         blank=True
     )
-    # playlists = models.ManyToManyField(
-    #     Playlist,
-    #     related_name='playlists',
-    #     blank=True
-    # )
-    language = CountryField(
-        help_text=_('Required language. Select your country')
+    playlists = models.ManyToManyField(
+        Playlist,
+        related_name='playlists',
+        blank=True
     )
     following = models.ManyToManyField(
         Artist,
         related_name='followers',
         blank=True
     )
+    liked_songs = models.ManyToManyField(
+        Track,
+        related_name='liked_songs',
+        blank=True
+    )
+    language = CountryField(
+        help_text=_('Required language. Select your country'),
+        blank=True
+    )
     premium = models.BooleanField(default=False)  
     followers = None
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
 
     class Meta:
         verbose_name = _('membership')
@@ -56,11 +66,6 @@ class Membership(BaseModel, AbstractUser):
         db_table = 'membership'
 
 class Device(BaseModel):
-    uuid = models.CharField(
-        _('uuid'),
-        max_length=32,
-        unique=True
-    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE,
