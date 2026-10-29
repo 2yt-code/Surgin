@@ -1,60 +1,78 @@
 from django.urls import path
 
-from apps.api.v1.account import views
+from apps.api.v1.account import api_views
+
 
 app_name = 'account'
 
 authentication_urls = [
     path(
         'auth/login/', 
-        views.CustomTokenObtainPairView.as_view(), 
+        api_views.CustomTokenObtainPairView.as_view(), 
         name='login-account'
     ),
     path(
         'auth/token-refresh/', 
-        views.CustomTokenRefreshView.as_view(), 
+        api_views.CustomTokenRefreshView.as_view(), 
         name='token-refresh-account'
     ),
     path(
         'auth/register/', 
-        views.RegisterView.as_view(), 
+        api_views.RegisterView.as_view(), 
         name='register-account'
     ),
     path(
         'auth/logout/', 
-        views.LogoutView.as_view(), 
+        api_views.LogoutView.as_view(), 
         name='logout-account'
     ),
     path(
         'auth/password-reset/', 
-        views.CustomResetPasswordRequestToken.as_view(), 
+        api_views.CustomResetPasswordRequestToken.as_view(), 
         name='reset-password-validate'
     ),
     path(
         'auth/password-reset/confirm/', 
-        views.CustomResetPasswordConfirm.as_view(), 
+        api_views.CustomResetPasswordConfirm.as_view(), 
         name='reset-password-confirm'
     ),
     path(
         'auth/password-reset/validate-token/', 
-        views.CustomResetPasswordValidateToken.as_view(), 
+        api_views.CustomResetPasswordValidateToken.as_view(), 
         name='reset-password-validate'
-    ),
+    )
+]
+user_urls = [
     path(
         'user/',
-        views.UserView.as_view(),
-        name='user-data-account'
+        api_views.UserView.as_view(),
+        name='user-account'
     ),
     path(
         'user/followings/',
-        views.UserFollowingsView.as_view(),
-        name='user-data-account'
+        api_views.UserFollowingsView.as_view(),
+        name='user-followings-account'
     ),
     path(
         'user/playlists/',
-        views.UserPlaylistsView.as_view(),
-        name='user-data-account'
+        api_views.UserPlaylistsView.as_view(),
+        name='user-playlists-account'
+    ),
+    path(
+        'user/playlists/<str:playlist_id>/',
+        api_views.UserPlaylistByIDView.as_view(),
+        name='user-playlist-by-name-account'
+    ),
+    path(
+        'user/playlist/<str:playlist_id>/track/<str:track_id>/',
+        api_views.UserPlaylistTrackView.as_view(),
+        name='user-playlist-by-name-account'
+    ),
+    path(
+        'user/liked-songs/',
+        api_views.UserLikedSongsView.as_view(),
+        name='user-liked-songs-account'
     )
 ]
 
-urlpatterns = [] + authentication_urls
+urlpatterns = [] + authentication_urls + user_urls
