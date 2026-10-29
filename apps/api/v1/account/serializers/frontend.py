@@ -1,5 +1,4 @@
 from typing import Dict, Any
-from uuid import uuid4
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
@@ -8,14 +7,16 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers, exceptions
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import (
     TokenObtainSerializer,
     TokenRefreshSerializer,
 )
 
 from apps.api.v1.account.models import FingerPrint, Device
+from apps.api.v1.account.constants import RESERVED_NAMES
 from apps.api.v1.account.signals import (
-    get_uuid, 
+    get_device_id, 
     get_user_agent, 
     login_account,
     get_client_ip,
@@ -23,6 +24,7 @@ from apps.api.v1.account.signals import (
     get_refresh_token
 )
 from apps.api.v1.core.artist.models import Artist
+from apps.api.v1.core.playlist.models import Playlist
 import utils
 
 
@@ -41,25 +43,29 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
         data = super().validate(attrs)
         request = self.context.get('request')
         key = utils.fingerprint.scheme_key(request)
-        uuid = get_uuid(request)
+        device_id = get_device_id(request)
 
         try:
             fingerprint = FingerPrint.objects.get(
                 device__user=self.user.pk,
                 key=key
             )
-            if uuid:
-                if not fingerprint.device.uuid == uuid:
+            if device_id:
+                if not fingerprint.device.pk == device_id:
                     raise exceptions.AuthenticationFailed(
                         detail=self.default_error_messages['login_failed'],
                         code='login_failed'
                     )
                 
-                data['uuid'] = uuid
+                data['device_id'] = device_id
             else:
-                data['uuid'] = fingerprint.device.uuid
+                data['device_id'] = fingerprint.device.pk
 
-            login_valid = login_account(request, user=self.user, uuid=data.get('uuid'))
+            login_valid = login_account(
+                request, 
+                user=self.user, 
+                device_id=data.get('device_id')
+            )
             if not login_valid: 
                 raise exceptions.AuthenticationFailed(
                     detail=self.default_error_messages['login_failed'],
@@ -70,7 +76,6 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
             try:
                 with transaction.atomic():
                     device_model = Device.objects.create(
-                        uuid=uuid4().hex,
                         user=self.user,
                         ip_address=get_client_ip(request),
                         device_name=get_user_agent(request)
@@ -79,7 +84,7 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
                         device=device_model,
                         key=key
                     )
-                    data['uuid'] = device_model.uuid
+                    data['device_id'] = device_model.pk
             except:
                 raise exceptions.AuthenticationFailed(
                     detail=self.default_error_messages['login_failed'],
@@ -104,7 +109,10 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
         if not refresh_token:
             refresh_token = attrs.get('refresh')
 
-        fingerprint = check_fingerprint(request, uuid=get_uuid(request))
+        fingerprint = check_fingerprint(
+            request, 
+            device_id=get_device_id(request)
+        )
         if not fingerprint: 
             raise exceptions.AuthenticationFailed(
                 detail=_('Token is invalid or expired'),
@@ -130,16 +138,11 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
         return data
 
 class RegisterSerializer(serializers.ModelSerializer):
-    def validate(self, attrs):
-        if User.objects.filter(email=attrs.get('email')).first():
-            raise serializers.ValidationError({'email': _('Email already exists')})
-        return attrs
-
-    def create(self, validated_data):
-        user = User.objects.create(**validated_data)
-        user.set_password(validated_data.get('password'))
-        user.save()
-        return user
+    confirm_password = serializers.CharField(
+        style={'input_type': 'password'}, 
+        required=True, 
+        write_only=True
+    )
 
     class Meta:
         model = User
@@ -149,12 +152,40 @@ class RegisterSerializer(serializers.ModelSerializer):
             'username', 
             'email', 
             'password',
-            'language'
+            'language',
+            'confirm_password'
             ]
         
         extra_kwrags = {
             'password': {'write_only': True}
         }
+
+    def validate(self, data):
+        if data['email'].strip().casefold() in RESERVED_NAMES:
+            raise serializers.ValidationError(
+                {'confirm_password': _('This email is reserved')},
+                code='email_reserved'
+                )
+
+        if data['username'].strip().casefold() in RESERVED_NAMES:
+            raise serializers.ValidationError(
+                {'username': _('This username is reserved')},
+                code='username_reserved'
+            )
+
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError(
+                {'confirm_password': _('This password must match')},
+                code='password_must_match'
+                )
+        return data
+
+    def create(self, validated_data):
+        validated_data.pop('confirm_password')
+        user = User.objects.create(**validated_data)
+        user.set_password(validated_data.get('password'))
+        user.save()
+        return user
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -170,4 +201,34 @@ class UserSerializer(serializers.ModelSerializer):
 class UserFollowingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Artist
+        fields = ['id', 'name'] # TODO
+
+class UserPlaylistTrackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Playlist
+        fields = ['id', 'name'] # TODO
+
+class UserPlaylistByIDRetrieveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Playlist
+        fields = ['id', 'name'] # TODO
+
+class UserPlaylistByIDUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Playlist
         fields = ['name'] # TODO
+
+class UserPlaylistsRetrieveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Playlist
+        fields = ['id', 'name'] # TODO
+
+class UserPlaylistCreateSerializer(serializers.Serializer): # TODO
+    name = serializers.CharField(
+        required=True,
+        validators=[
+            UniqueValidator(
+                queryset=Playlist.objects.all(),
+                message=_('Playlist already exists')
+            )
+        ])
