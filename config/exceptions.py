@@ -9,5 +9,4 @@ def custom_exception_handler(exc, context):
             'detail': response.data.get('detail'),
             'code': exc.get_codes(),
         }
-
     return response
