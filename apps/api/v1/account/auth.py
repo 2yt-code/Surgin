@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import Token
 from apps.api.v1.account.signals import (
     check_fingerprint, 
     get_access_token, 
-    get_uuid
+    get_device_id
 )
 
 
@@ -15,7 +15,7 @@ class CustomJWTAuthentication(JWTAuthentication):
         access_token = get_access_token(request)
         validated_token = self.get_validated_token(access_token)
 
-        fingerprint = check_fingerprint(request, uuid=get_uuid(request))
+        fingerprint = check_fingerprint(request, device_id=get_device_id(request))
         if not fingerprint:
             return None        
 
