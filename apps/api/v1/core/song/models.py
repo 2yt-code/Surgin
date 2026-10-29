@@ -6,12 +6,12 @@ from apps.api.v1.core.models import BaseModel
 
 # TODO
 class Song(BaseModel):
-    cover = models.ImageField(
-        _('cover'),
-        upload_to='song_covers/',
-        null=True,
-        blank=True
-    )
+    # cover = models.ImageField(
+    #     _('cover'),
+    #     upload_to='song_covers/',
+    #     null=True,
+    #     blank=True
+    # )
     audio_file = models.FileField(
         _('audio file'),
         upload_to='songs/%Y/%m/%d/'
