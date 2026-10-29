@@ -26,7 +26,6 @@ from rest_framework import (
     generics,
     permissions,
     views,
-    exceptions
 )
 
 from apps.api.v1.account.models import Device
