@@ -6,8 +6,10 @@ from django.utils.translation import gettext_lazy as _
 from django_rest_passwordreset.signals import reset_password_token_created
 from rest_framework.request import Request
 from rest_framework.response import Response
+import uuid
 
 from apps.api.v1.account.models import Device, FingerPrint
+from apps.api.v1.account.paginations import UserPagination
 import utils
 
 
@@ -17,8 +19,11 @@ REFRESH_TOKEN_MAX_AGE_DEVICE_UUID = 7 * 24 * 60 * 60
 def get_user_agent(request: Request):
     return request.META.get('HTTP_USER_AGENT', '')
 
-def get_uuid(request: Request):
-    return request.COOKIES.get('device_uuid')
+def get_device_id(request: Request):
+    device_id = request.COOKIES.get('device_id')
+    if device_id:
+        return uuid.UUID(str(device_id))
+    else: return None
 
 def get_refresh_token(request: Request):
     return request.COOKIES.get('refresh_token')
@@ -29,7 +34,7 @@ def get_access_token(request: Request):
 def clear_auth_cookie(response: Response):
     response.delete_cookie('access_token')
     response.delete_cookie('refresh_token')
-    response.delete_cookie('device_uuid')
+    response.delete_cookie('device_id')
 
 def get_client_ip(request: Request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -72,8 +77,8 @@ def set_auth_cookies(
         path='/',
     )
     response.set_cookie(
-        key='device_uuid',
-        value=str(device.uuid),
+        key='device_id',
+        value=str(device.pk),
         max_age=REFRESH_TOKEN_MAX_AGE_DEVICE_UUID,
         httponly=True,
         secure=True,
@@ -84,10 +89,10 @@ def set_auth_cookies(
 @transaction.atomic
 def login_account(request: Request, *args, **kwargs):
     try:
-        uuid = kwargs.get('uuid')
+        device_id = kwargs.get('device_id')
         key = utils.fingerprint.scheme_key(request)
         fingerprint_model = FingerPrint.objects.get(
-            device__uuid=uuid,
+            device__pk=device_id,
             key=key
         )
     except FingerPrint.DoesNotExist:
@@ -121,10 +126,10 @@ def login_account(request: Request, *args, **kwargs):
 @transaction.atomic
 def check_fingerprint(request: Request, *args, **kwargs):
     try:
-        uuid = kwargs.get('uuid')
+        device_id = kwargs.get('device_id')
         key = utils.fingerprint.scheme_key(request)
         fingerprint_model = FingerPrint.objects.get(
-            device__uuid=uuid,
+            device__pk=device_id,
             key=key
         )
     except FingerPrint.DoesNotExist:
@@ -134,11 +139,11 @@ def check_fingerprint(request: Request, *args, **kwargs):
 
     device_model = fingerprint_model.device
     device_model.last_seen = timezone.now()
+    if not device_model.is_active: return False
     if (
         get_client_ip(request) == device_model.ip_address or 
         fingerprint_model.trust_score >=50
     ): fingerprint_model.trust_score += 1
-    if not device_model.is_active: return False
 
     fingerprint_model.save(update_fields=['last_verified_at', 'trust_score'])
     device_model.save(update_fields=['last_seen'])
@@ -162,3 +167,16 @@ def password_reset_token_created(
         from_email=None,
         recipient_list=[user.email],
     )
+
+def create_paginator(
+        queryset, 
+        request: Request, 
+        view
+):
+    paginator = UserPagination()
+    page = paginator.paginate_queryset(
+            queryset=queryset, 
+            request=request, 
+            view=view
+        )
+    return page
