@@ -589,7 +589,7 @@ class UserPlaylistByIDView(views.APIView):
         return Response(serializer.data)
     
 @extend_schema(tags=['User Playlists'])
-class UserPlaylistTrackView(views.APIView):
+class UserPlaylistTrackByIDView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @transaction.atomic
