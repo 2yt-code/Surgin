@@ -2,8 +2,7 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
-from django.db import IntegrityError, transaction
-from django.core.exceptions import ValidationError
+from django.db import transaction
 from rest_framework.request import Request
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.response import Response
@@ -43,12 +42,14 @@ from apps.api.v1.account.serializers import (
     UserSerializer,
     CustomTokenObtainPairSerializer,
     CustomTokenRefreshSerializer,
-    UserFollowingsSerializer,
+    UserFollowingsRetrieveSerializer,
     UserPlaylistsRetrieveSerializer,
     UserPlaylistByIDRetrieveSerializer,
     UserPlaylistCreateSerializer,
-    UserPlaylistByIDUpdateSerializer
+    UserPlaylistByIDUpdateSerializer,
+    UserFollowingsCreateSerializer
 )
+from apps.api.v1.core.artist.models import Artist
 from apps.api.v1.core.playlist.models import Playlist
 from apps.api.v1.core.track.models import Track
 import utils
@@ -414,7 +415,7 @@ class UserFollowingsView(views.APIView):
             request=request, 
             view=self
         )
-        serializer = UserFollowingsSerializer(
+        serializer = UserFollowingsRetrieveSerializer(
             instance=page, 
             many=True
         )
@@ -422,6 +423,52 @@ class UserFollowingsView(views.APIView):
             serializer.data, 
             status=status.HTTP_200_OK
         )
+    
+    @transaction.atomic
+    def post(self, request):
+        serializer = UserFollowingsCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            artist = Artist.objects.get(pk=serializer.validated_data.get('artist_id'))
+        except Artist.DoesNotExist:
+            raise Response(
+                dict(
+                    detail=_('Artist not found'),
+                    code='not_found'
+                ), status=status.HTTP_404_NOT_FOUND
+            )
+        
+        request.user.following.add(artist)
+        return Response(status=status.HTTP_200_OK)
+
+@extend_schema(tags=['User Followings'])
+class UserFollowingByIDView(views.APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def delete(self, request, artist_id):
+        try:
+            artist_id = uuid.UUID(artist_id)
+        except:
+            raise Response(
+                dict(
+                    detail=_('The ID format is incorrect'), 
+                    code='invalid_id_format'
+                )
+            )
+        
+        try:
+            artist = Artist.objects.get(pk=artist_id)
+        except Artist.DoesNotExist:
+            raise Response(
+                dict(
+                    detail=_('Artist not found'),
+                    code='not_found'
+                ), status=status.HTTP_404_NOT_FOUND
+            )
+        
+        request.user.following.remove(artist)
+        return Response(status=status.HTTP_200_OK)
 
 # TODO
 @extend_schema(tags=['User Playlists'])
@@ -500,7 +547,7 @@ class UserPlaylistByIDView(views.APIView):
         except Playlist.DoesNotExist:
             raise Response(
                 dict(
-                    detail=_('Playlist not Found'),
+                    detail=_('Playlist not found'),
                     code='not_found'
                 ), status=status.HTTP_404_NOT_FOUND
             )
