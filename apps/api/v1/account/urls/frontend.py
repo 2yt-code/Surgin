@@ -54,6 +54,11 @@ user_urls = [
         name='user-followings-account'
     ),
     path(
+        'user/followings/<str:artist_id>/',
+        api_views.UserFollowingByIDView.as_view(),
+        name='user-followings-by-id-account'
+    ),
+    path(
         'user/playlists/',
         api_views.UserPlaylistsView.as_view(),
         name='user-playlists-account'
@@ -61,12 +66,12 @@ user_urls = [
     path(
         'user/playlists/<str:playlist_id>/',
         api_views.UserPlaylistByIDView.as_view(),
-        name='user-playlist-by-name-account'
+        name='user-playlist-by-id-account'
     ),
     path(
         'user/playlist/<str:playlist_id>/track/<str:track_id>/',
         api_views.UserPlaylistTrackView.as_view(),
-        name='user-playlist-by-name-account'
+        name='user-playlist-by-id-account'
     ),
     path(
         'user/liked-songs/',
