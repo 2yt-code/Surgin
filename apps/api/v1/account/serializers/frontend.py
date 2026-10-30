@@ -198,10 +198,13 @@ class UserSerializer(serializers.ModelSerializer):
             'language'
         ]
 
-class UserFollowingsSerializer(serializers.ModelSerializer):
+class UserFollowingsRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Artist
         fields = ['id', 'name'] # TODO
+
+class UserFollowingsCreateSerializer(serializers.Serializer):
+    artist_id = serializers.UUIDField(required=True)
 
 class UserPlaylistTrackSerializer(serializers.ModelSerializer):
     class Meta:
