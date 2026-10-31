@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
@@ -6,8 +7,6 @@ from apps.api.v1.core.album.models import Album
 from apps.api.v1.core.artist.models import Artist
 from apps.api.v1.core.models import BaseModel
 
-
-User = get_user_model()
 
 class Track(BaseModel):
     title = models.CharField(
@@ -20,6 +19,7 @@ class Track(BaseModel):
         verbose_name=_('artist'),
         related_name='artist',
         related_query_name='artist',
+        on_delete=models.CASCADE,
         db_index=True
     )
     cover = models.ImageField(
@@ -37,6 +37,7 @@ class Track(BaseModel):
         verbose_name=_('album'),
         related_name='album',
         related_query_name='album',
+        on_delete=models.SET_NULL,
         db_index=True,
         null=True,
         blank=True
@@ -79,30 +80,28 @@ class TrackPreference(BaseModel):
         Track,
         verbose_name=_('track'),
         related_name='track',
-        related_query_name='track'
+        related_query_name='track',
+        on_delete=models.CASCADE
     )
     users_liked = models.ManyToManyField(
-        User,
+        settings.AUTH_USER_MODEL,
         verbose_name=_('users liked'),
         related_name='users_liked',
         related_query_name='users_liked',
-        null=True,
         blank=True
     )
     users_disliked = models.ManyToManyField(
-        User,
+        settings.AUTH_USER_MODEL,
         verbose_name=_('users disliked'),
         related_name='users_disliked',
         related_query_name='users_disliked',
-        null=True,
         blank=True
     )
     users_playlist_added = models.ManyToManyField(
-        User,
+        settings.AUTH_USER_MODEL,
         verbose_name=_('users playlist added'),
         related_name='users_playlist_added',
         related_query_name='users_playlist_added',
-        null=True,
         blank=True
     )
 
