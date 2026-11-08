@@ -8,7 +8,7 @@ from django_countries.fields import CountryField
 from apps.api.v1.core.artist.models import Artist
 from apps.api.v1.core.models import BaseModel
 from apps.api.v1.core.playlist.models import Playlist
-from apps.api.v1.core.track.models import Track
+from apps.api.v1.core.track.models import Genre, Track, TrackPreference
 
 
 class Membership(BaseModel, AbstractUser):
@@ -35,27 +35,22 @@ class Membership(BaseModel, AbstractUser):
         null=True,
         blank=True
     )
-    playlists = models.ManyToManyField(
-        Playlist,
-        related_name='playlists',
-        blank=True
-    )
-    following = models.ManyToManyField(
-        Artist,
-        related_name='followers',
-        blank=True
-    )
     liked_songs = models.ManyToManyField(
-        Track,
-        related_name='liked_songs',
+        TrackPreference,
+        verbose_name=_('liked songs'),
+        related_name='user_liked',
+        related_query_name='user_liked',
         blank=True
     )
     language = CountryField(
+        verbose_name=_('language'),
         help_text=_('Required language. Select your country'),
         blank=True
     )
-    premium = models.BooleanField(default=False)  
-    followers = None
+    premium = models.BooleanField(
+        _('premium'), 
+        default=False
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -65,11 +60,15 @@ class Membership(BaseModel, AbstractUser):
         verbose_name_plural = _('memberships')
         db_table = 'membership'
 
+    def __str__(self):
+        return f'{self.username}'
+
 class Device(BaseModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE,
-        verbose_name=_('user')
+        verbose_name=_('user'),
+        db_index=True
     )
     device_name = models.CharField(
         _('device name'), 
@@ -83,33 +82,30 @@ class Device(BaseModel):
         _('last seen'), 
         default=timezone.now
     )
-    created_at = models.DateTimeField(
-        _('created'), 
-        auto_now_add=True
+    ip_address = models.GenericIPAddressField(
+        _('ip address')
     )
-    ip_address = models.GenericIPAddressField(_('ip address'))
 
     class Meta:
         verbose_name = _('device')
         verbose_name_plural = _('devices')
         db_table = 'device'
 
+    def __str__(self):
+        return f'{self.user} - {self.device_name}'
+
 class FingerPrint(BaseModel):
     device = models.OneToOneField(
         Device,
         on_delete=models.CASCADE,
         verbose_name=_('device'),
-        null=True,
-        blank=True
+        db_index=True,
     )
     key = models.CharField(
         _('fingerprint hash'),
         max_length=64,
-        unique=True
-    )
-    created_at = models.DateTimeField(
-        _('created'), 
-        auto_now_add=True
+        unique=True,
+        db_index=True
     )
     trust_score = models.IntegerField(
         _('trust level'), 
@@ -124,32 +120,41 @@ class FingerPrint(BaseModel):
         verbose_name_plural = _('fingerprints')
         db_table = 'fingerprint'
 
+    def __str__(self):
+        return f'{self.device.user} - {self.device.device_name}'
+
 class UserPreferences(BaseModel):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name=('user'),    
     )
-    # artists_favorite = models.ManyToManyField(
-    #     Artist,
-    #     verbose_name=_('artists favorite'),
-    #     related_name='artists_favorite',
-    #     blank=True
-    # )
-    # tracks_favorite = models.ManyToManyField(
-    #     Track,
-    #     verbose_name=_('tracks favorite'),
-    #     related_name='tracks_favorite',
-    #     blank=True
-    # )
-    # genre_favorite = models.JSONField(
-    #     _('genre favorite'),
-    #     max_length=50,
-    #     null=True,
-    #     blank=True
-    # )
+    artists_favorite = models.ManyToManyField(
+        Artist,
+        verbose_name=_('artists favorite'),
+        related_name='artist_lovers',
+        related_query_name='artist_lovers',
+        blank=True
+    )
+    tracks_favorite = models.ManyToManyField(
+        Track,
+        verbose_name=_('tracks favorite'),
+        related_name='track_lovers',
+        related_query_name='track_lovers',
+        blank=True
+    )
+    genre_favorite = models.ManyToManyField(
+        Genre,
+        verbose_name=_('genre favorite'),
+        related_name='user_genre_favorite',
+        related_query_name='user_genre_favorite',
+        blank=True
+    )
 
     class Meta:
-        verbose_name = _('preference')
-        verbose_name_plural = _('preferences')
+        verbose_name = _('user preference')
+        verbose_name_plural = _('user preferences')
         db_table = 'user_preferences'
+
+    def __str__(self):
+        return f'{self.user}'
