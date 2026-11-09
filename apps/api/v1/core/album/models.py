@@ -57,11 +57,6 @@ class Album(BaseModel):
         _('published'),
         default=True
     )
-    slug = models.SlugField(
-        _('slug'),
-        max_length=120,
-        unique=True
-    )
 
     class Meta:
         verbose_name = _('album')
