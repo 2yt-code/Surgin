@@ -28,7 +28,13 @@ from rest_framework import (
 )
 
 from apps.api.v1.account.models import Device
-from apps.api.v1.account.signals import clear_auth_cookie, create_paginator, set_access_token, set_auth_cookies
+from apps.api.v1.account.services import (
+    check_id_format, 
+    clear_auth_cookie, 
+    create_paginator, 
+    set_access_token, 
+    set_auth_cookies
+)
 from apps.api.v1.account.swaggers import (
     SchemaResponseSerializer,
     TokenObtainPairResponseSerializer,
@@ -40,6 +46,7 @@ from apps.api.v1.account.swaggers import (
 from apps.api.v1.account.serializers import (
     RegisterSerializer,
     UserSerializer,
+    ChangePasswordSerializer,
     CustomTokenObtainPairSerializer,
     CustomTokenRefreshSerializer,
     UserFollowingsRetrieveSerializer,
@@ -49,7 +56,7 @@ from apps.api.v1.account.serializers import (
     UserPlaylistByIDUpdateSerializer,
     UserFollowingsCreateSerializer
 )
-from apps.api.v1.core.artist.models import Artist
+from apps.api.v1.core.artist.models import Artist, ArtistFollow
 from apps.api.v1.core.playlist.models import Playlist
 from apps.api.v1.core.track.models import Track
 import utils
@@ -216,7 +223,6 @@ class RegisterView(generics.CreateAPIView):
         serializer.save()
         return Response(status=status.HTTP_201_CREATED)
 
-# TODO
 @extend_schema(
     tags=['User Information'],
     summary=_('User account information'),
@@ -320,6 +326,17 @@ class LogoutView(views.APIView):
         response = Response(status=status.HTTP_204_NO_CONTENT)
         clear_auth_cookie(response=response)
         return response
+
+@extend_schema(tags=['User Authentication'])
+class ChangePasswordView(views.APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def patch(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        request.user.set_password(serializer.validated_data.get('new_password'))
+        request.user.save(update_fields=['password'])
+        return Response(status=status.HTTP_200_OK)
     
 @extend_schema(
     tags=['User Authentication'],
@@ -403,7 +420,6 @@ class CustomResetPasswordConfirm(ResetPasswordConfirm):
 class CustomResetPasswordRequestToken(ResetPasswordRequestToken):
     pass
 
-# TODO
 @extend_schema(tags=['User Followings'])
 class UserFollowingsView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -424,7 +440,6 @@ class UserFollowingsView(views.APIView):
             status=status.HTTP_200_OK
         )
     
-    @transaction.atomic
     def post(self, request):
         serializer = UserFollowingsCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -432,14 +447,17 @@ class UserFollowingsView(views.APIView):
         try:
             artist = Artist.objects.get(pk=serializer.validated_data.get('artist_id'))
         except Artist.DoesNotExist:
-            raise Response(
+            return Response(
                 dict(
                     detail=_('Artist not found'),
                     code='not_found'
                 ), status=status.HTTP_404_NOT_FOUND
             )
         
-        request.user.following.add(artist)
+        ArtistFollow.objects.get_or_create(
+            user=request.user,
+            artist=artist
+        )
         return Response(status=status.HTTP_200_OK)
 
 @extend_schema(tags=['User Followings'])
@@ -447,37 +465,40 @@ class UserFollowingByIDView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def delete(self, request, artist_id):
-        try:
-            artist_id = uuid.UUID(artist_id)
-        except:
-            raise Response(
+        artist_id = check_id_format(artist_id)
+        if not artist_id:
+            return Response(
                 dict(
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
-                )
-            )
-        
+                ), status=status.HTTP_400_BAD_REQUEST
+            )        
         try:
             artist = Artist.objects.get(pk=artist_id)
-        except Artist.DoesNotExist:
-            raise Response(
+            ArtistFollow.objects.get(
+                user=request.user,
+                artist=artist
+            ).delete()
+
+        except (Artist.DoesNotExist, ArtistFollow.DoesNotExist):
+            return Response(
                 dict(
                     detail=_('Artist not found'),
                     code='not_found'
                 ), status=status.HTTP_404_NOT_FOUND
             )
-        
-        request.user.following.remove(artist)
         return Response(status=status.HTTP_200_OK)
 
-# TODO
 @extend_schema(tags=['User Playlists'])
 class UserPlaylistsView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
     # throttle_classes = (UserRateThrottle,) # TODO
     
     def get(self, request):
-        playlists = request.user.playlists.all()
+        playlists = request.user.owned_playlists.all()
+        if not playlists.exists():
+            playlists.user.collaborative_playlists.all()
+
         page = create_paginator(
             queryset=playlists, 
             request=request, 
@@ -492,7 +513,6 @@ class UserPlaylistsView(views.APIView):
             status=status.HTTP_200_OK
         )
     
-    @transaction.atomic
     def post(self, request):
         serializer = UserPlaylistCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -508,13 +528,12 @@ class UserPlaylistByIDView(views.APIView):
         try:
             playlist_id = uuid.UUID(playlist_id)
         except:
-            raise Response(
+            return Response(
                 dict(
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
-                )
-            )
-        
+                ), status=status.HTTP_400_BAD_REQUEST
+            )        
         queryset = Playlist.objects.filter(pk=playlist_id)
         page = create_paginator(
             queryset=queryset, 
@@ -530,22 +549,20 @@ class UserPlaylistByIDView(views.APIView):
             status=status.HTTP_200_OK
         )
     
-    @transaction.atomic
     def delete(self, request, playlist_id):
         try:
             playlist_id = uuid.UUID(playlist_id)
         except:
-            raise Response(
+            return Response(
                 dict(
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
-                )
-            )
-        
+                ), status=status.HTTP_400_BAD_REQUEST
+            )        
         try:
             Playlist.objects.get(pk=playlist_id).delete()
         except Playlist.DoesNotExist:
-            raise Response(
+            return Response(
                 dict(
                     detail=_('Playlist not found'),
                     code='not_found'
@@ -558,35 +575,34 @@ class UserPlaylistByIDView(views.APIView):
         try:
             playlist_id = uuid.UUID(playlist_id)
         except:
-            raise Response(
+            return Response(
                 dict(
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
-                )
-            )
-        
+                ), status=status.HTTP_400_BAD_REQUEST
+            )        
         playlist = get_object_or_404(Playlist, pk=playlist_id)
         serializer = UserPlaylistByIDUpdateSerializer(playlist, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        return Response(serializer.validated_data)
     
     def patch(self, request, playlist_id):
         try:
             playlist_id = uuid.UUID(playlist_id)
         except:
-            raise Response(
+            return Response(
                 dict(
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
-                )
+                ), status=status.HTTP_400_BAD_REQUEST
             )
         
         playlist = get_object_or_404(Playlist, pk=playlist_id)
         serializer = UserPlaylistByIDUpdateSerializer(playlist, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        return Response(serializer.validated_data)
     
 @extend_schema(tags=['User Playlists'])
 class UserPlaylistTrackByIDView(views.APIView):
@@ -595,13 +611,15 @@ class UserPlaylistTrackByIDView(views.APIView):
     @transaction.atomic
     def delete(self, request, playlist_id, track_id):
         try:
-            track = Track.objects.get(pk=track_id)
-            Playlist.objects.get(pk=playlist_id).tracks.remove(track)
+            Playlist.objects.filter(
+                pk=playlist_id,
+                tracks__pk=track_id
+            ).delete()
         except:
             return Response(
                 dict(
-                    detail=_('Error deleting track in playlist'), 
-                    code='track_deleting_failed' # TODO
+                    detail=_('Error removing track in playlist'), 
+                    code='removing_failed'
                 ), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
