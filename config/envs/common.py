@@ -58,14 +58,10 @@ INSTALLED_APPS = [
     
     # v1
     'apps.api.v1.account',
-    'apps.api.v1.core.song',
     'apps.api.v1.core.artist',
     'apps.api.v1.core.album',
     'apps.api.v1.core.playlist',
     'apps.api.v1.core.track',
-
-    # filtering
-    'django_filters',
     
     # password reset
     'django_rest_passwordreset',
