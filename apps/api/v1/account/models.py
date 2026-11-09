@@ -7,7 +7,6 @@ from django_countries.fields import CountryField
 
 from apps.api.v1.core.artist.models import Artist
 from apps.api.v1.core.models import BaseModel
-from apps.api.v1.core.playlist.models import Playlist
 from apps.api.v1.core.track.models import Genre, Track, TrackPreference
 
 
