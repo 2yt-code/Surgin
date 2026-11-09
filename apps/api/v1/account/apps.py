@@ -6,4 +6,4 @@ class AccountConfig(AppConfig):
     name = 'apps.api.v1.account'
 
     def ready(self):
-        import apps.api.v1.account.signals
+        import apps.api.v1.account.services
