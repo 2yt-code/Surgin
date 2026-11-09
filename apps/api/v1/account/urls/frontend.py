@@ -27,6 +27,11 @@ authentication_urls = [
         name='logout-account'
     ),
     path(
+        'auth/change-password/',
+        api_views.ChangePasswordView.as_view(),
+        name='change-password'
+    ),
+    path(
         'auth/password-reset/', 
         api_views.CustomResetPasswordRequestToken.as_view(), 
         name='reset-password-validate'
@@ -49,32 +54,32 @@ user_urls = [
         name='user-account'
     ),
     path(
-        'user/followings/',
+        'user/following/',
         api_views.UserFollowingsView.as_view(),
         name='user-followings-account'
     ),
     path(
-        'user/followings/<str:artist_id>/',
+        'user/following/<str:artist_id>/',
         api_views.UserFollowingByIDView.as_view(),
         name='user-followings-by-id-account'
     ),
     path(
-        'user/playlists/',
+        'user/playlist/',
         api_views.UserPlaylistsView.as_view(),
         name='user-playlists-account'
     ),
     path(
-        'user/playlists/<str:playlist_id>/',
+        'user/playlist/<str:playlist_id>/',
         api_views.UserPlaylistByIDView.as_view(),
         name='user-playlist-by-id-account'
     ),
     path(
-        'user/playlists/<str:playlist_id>/track/<str:track_id>/',
+        'user/playlist/<str:playlist_id>/track/<str:track_id>/',
         api_views.UserPlaylistTrackByIDView.as_view(),
         name='user-playlist-by-id-account'
     ),
     path(
-        'user/liked-songs/',
+        'user/liked-song/',
         api_views.UserLikedSongsView.as_view(),
         name='user-liked-songs-account'
     )
