@@ -4,10 +4,14 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
-from rest_framework import serializers, exceptions
+from rest_framework.response import Response
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.validators import UniqueValidator
+from rest_framework import (
+    serializers, 
+    exceptions, 
+    status
+)
 from rest_framework_simplejwt.serializers import (
     TokenObtainSerializer,
     TokenRefreshSerializer,
@@ -15,7 +19,7 @@ from rest_framework_simplejwt.serializers import (
 
 from apps.api.v1.account.models import FingerPrint, Device
 from apps.api.v1.account.constants import RESERVED_NAMES
-from apps.api.v1.account.signals import (
+from apps.api.v1.account.services import (
     get_device_id, 
     get_user_agent, 
     login_account,
@@ -23,7 +27,8 @@ from apps.api.v1.account.signals import (
     check_fingerprint,
     get_refresh_token
 )
-from apps.api.v1.core.artist.models import Artist
+from apps.api.v1.core.album.models import Album
+from apps.api.v1.core.artist.models import Artist, ArtistFollow
 from apps.api.v1.core.playlist.models import Playlist
 import utils
 
@@ -52,6 +57,8 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
             )
             if device_id:
                 if not fingerprint.device.pk == device_id:
+                    fingerprint.trust_score -= 1
+                    fingerprint.save(update_fields=['trust_score'])
                     raise exceptions.AuthenticationFailed(
                         detail=self.default_error_messages['login_failed'],
                         code='login_failed'
@@ -67,6 +74,8 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
                 device_id=data.get('device_id')
             )
             if not login_valid: 
+                fingerprint.trust_score -= 1
+                fingerprint.save(update_fields=['trust_score'])
                 raise exceptions.AuthenticationFailed(
                     detail=self.default_error_messages['login_failed'],
                     code='login_failed'
@@ -86,6 +95,8 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
                     )
                     data['device_id'] = device_model.pk
             except:
+                fingerprint.trust_score -= 1
+                fingerprint.save(update_fields=['trust_score'])
                 raise exceptions.AuthenticationFailed(
                     detail=self.default_error_messages['login_failed'],
                     code='login_failed'
@@ -140,7 +151,6 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(
         style={'input_type': 'password'}, 
-        required=True, 
         write_only=True
     )
 
@@ -163,19 +173,19 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data['email'].strip().casefold() in RESERVED_NAMES:
             raise serializers.ValidationError(
-                {'confirm_password': _('This email is reserved')},
+                detail=_('This email is reserved'),
                 code='email_reserved'
                 )
 
         if data['username'].strip().casefold() in RESERVED_NAMES:
             raise serializers.ValidationError(
-                {'username': _('This username is reserved')},
+                detail=_('This username is reserved'),
                 code='username_reserved'
             )
 
         if data['password'] != data['confirm_password']:
             raise serializers.ValidationError(
-                {'confirm_password': _('This password must match')},
+                detail=_('This password must match'),
                 code='password_must_match'
                 )
         return data
@@ -186,6 +196,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data.get('password'))
         user.save()
         return user
+    
+class ChangePasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(max_length=128)
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -198,13 +211,14 @@ class UserSerializer(serializers.ModelSerializer):
             'language'
         ]
 
-class UserFollowingsRetrieveSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Artist
-        fields = ['id', 'name'] # TODO
+class UserFollowingsRetrieveSerializer(serializers.Serializer):
+    artist = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='pk'
+    )
 
 class UserFollowingsCreateSerializer(serializers.Serializer):
-    artist_id = serializers.UUIDField(required=True)
+    artist_id = serializers.UUIDField()
 
 class UserPlaylistTrackSerializer(serializers.ModelSerializer):
     class Meta:
@@ -228,10 +242,7 @@ class UserPlaylistsRetrieveSerializer(serializers.ModelSerializer):
 
 class UserPlaylistCreateSerializer(serializers.Serializer): # TODO
     name = serializers.CharField(
-        required=True,
-        validators=[
-            UniqueValidator(
-                queryset=Playlist.objects.all(),
-                message=_('Playlist already exists')
-            )
-        ])
+        max_length=50,
+    )
+    description = serializers.CharField(max_length=300)
+    baner = serializers.ImageField()
