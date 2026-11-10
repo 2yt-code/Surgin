@@ -297,7 +297,6 @@ class UserView(generics.RetrieveUpdateAPIView):
 class LogoutView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
-    @transaction.atomic
     def post(self, request):
         key = utils.fingerprint.scheme_key(request)
 
@@ -568,7 +567,6 @@ class UserPlaylistByIDView(views.APIView):
                     code='not_found'
                 ), status=status.HTTP_404_NOT_FOUND
             )
-        
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     def put(self, request, playlist_id):
