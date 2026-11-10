@@ -1,14 +1,11 @@
 import uuid
 from django.contrib.auth import get_user_model
-from django.http import Http404
-from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from rest_framework.request import Request
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenViewBase
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.settings import api_settings
 from drf_spectacular.utils import (
     extend_schema,
@@ -28,8 +25,7 @@ from rest_framework import (
     exceptions
 )
 
-from apps.api.v1.account.models import Device
-from apps.api.v1.account.selectors import create_playlist, get_artist, get_artist_follow, get_device, get_or_create_artist_follow, get_or_create_blacklisted_token, get_outstanding_token, get_playlist, get_user_all
+from apps.api.v1.account.selectors import *
 from apps.api.v1.account.services import (
     check_id_format, 
     clear_auth_cookie, 
@@ -58,8 +54,6 @@ from apps.api.v1.account.serializers import (
     UserPlaylistByIDUpdateSerializer,
     UserFollowingsCreateSerializer
 )
-from apps.api.v1.core.artist.models import Artist, ArtistFollow
-from apps.api.v1.core.playlist.models import Playlist
 import utils
 
 
