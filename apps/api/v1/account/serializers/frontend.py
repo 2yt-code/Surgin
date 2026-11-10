@@ -19,6 +19,7 @@ from rest_framework_simplejwt.serializers import (
 
 from apps.api.v1.account.models import FingerPrint, Device
 from apps.api.v1.account.constants import RESERVED_NAMES
+from apps.api.v1.account.selectors import create_device, create_fingerprint, create_user, get_fingerprint
 from apps.api.v1.account.services import (
     get_device_id, 
     get_user_agent, 
@@ -51,7 +52,7 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
         device_id = get_device_id(request)
 
         try:
-            fingerprint = FingerPrint.objects.get(
+            fingerprint = get_fingerprint(
                 device__user=self.user.pk,
                 key=key
             )
@@ -84,12 +85,12 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
         except FingerPrint.DoesNotExist:
             try:
                 with transaction.atomic():
-                    device_model = Device.objects.create(
+                    device_model = create_device(
                         user=self.user,
                         ip_address=get_client_ip(request),
                         device_name=get_user_agent(request)
                     )
-                    FingerPrint.objects.create(
+                    create_fingerprint(
                         device=device_model,
                         key=key
                     )
@@ -192,7 +193,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('confirm_password')
-        user = User.objects.create(**validated_data)
+        user = create_user(**validated_data)
         user.set_password(validated_data.get('password'))
         user.save()
         return user

@@ -1,14 +1,14 @@
 import uuid
 from django.contrib.auth import get_user_model
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
-from django.db import transaction
 from rest_framework.request import Request
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenViewBase
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.settings import api_settings
 from drf_spectacular.utils import (
     extend_schema,
@@ -25,9 +25,11 @@ from rest_framework import (
     generics,
     permissions,
     views,
+    exceptions
 )
 
 from apps.api.v1.account.models import Device
+from apps.api.v1.account.selectors import create_playlist, get_artist, get_artist_follow, get_device, get_or_create_artist_follow, get_or_create_blacklisted_token, get_outstanding_token, get_playlist, get_user_all
 from apps.api.v1.account.services import (
     check_id_format, 
     clear_auth_cookie, 
@@ -58,7 +60,6 @@ from apps.api.v1.account.serializers import (
 )
 from apps.api.v1.core.artist.models import Artist, ArtistFollow
 from apps.api.v1.core.playlist.models import Playlist
-from apps.api.v1.core.track.models import Track
 import utils
 
 
@@ -127,7 +128,7 @@ class CustomTokenObtainPairView(TokenViewBase):
             status=status.HTTP_200_OK
         )
 
-        device_model = Device.objects.get(pk=serializer.validated_data.get('device_id'))
+        device_model = get_device(pk=serializer.validated_data.get('device_id'))
         set_auth_cookies(
             response, 
             serializer.validated_data.get('access'),
@@ -214,7 +215,7 @@ class CustomTokenRefreshView(TokenViewBase):
     }
 )
 class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
+    queryset = get_user_all()
     serializer_class = RegisterSerializer
     
     def post(self, request):
@@ -264,7 +265,7 @@ class RegisterView(generics.CreateAPIView):
 )
 class UserView(generics.RetrieveUpdateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    queryset = User.objects.all()
+    queryset = get_user_all()
     serializer_class = UserSerializer
 
     def get_object(self):
@@ -297,20 +298,17 @@ class UserView(generics.RetrieveUpdateAPIView):
 class LogoutView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
-    @transaction.atomic
     def post(self, request):
         key = utils.fingerprint.scheme_key(request)
 
         try:
-            outstanding_tokens = OutstandingToken.objects.filter(
+            outstanding_tokens = get_outstanding_token(
                 user=request.user
             )
             for token in outstanding_tokens:
-                BlacklistedToken.objects.get_or_create(
-                    token=token
-                )
+                get_or_create_blacklisted_token(token=token)
 
-            Device.objects.get(
+            get_device(
                 user=request.user, 
                 fingerprint__key=key
             ).delete()
@@ -443,18 +441,14 @@ class UserFollowingsView(views.APIView):
     def post(self, request):
         serializer = UserFollowingsCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        try:
-            artist = Artist.objects.get(pk=serializer.validated_data.get('artist_id'))
-        except Artist.DoesNotExist:
-            return Response(
-                dict(
-                    detail=_('Artist not found'),
-                    code='not_found'
-                ), status=status.HTTP_404_NOT_FOUND
+        artist = get_artist(pk=serializer.validated_data.get('artist_id'))
+        if not artist:
+            raise exceptions.NotFound(
+                detail=_('Artist not found'),
+                code='not_found'
             )
         
-        ArtistFollow.objects.get_or_create(
+        get_or_create_artist_follow(
             user=request.user,
             artist=artist
         )
@@ -472,20 +466,17 @@ class UserFollowingByIDView(views.APIView):
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
                 ), status=status.HTTP_400_BAD_REQUEST
-            )        
-        try:
-            artist = Artist.objects.get(pk=artist_id)
-            ArtistFollow.objects.get(
-                user=request.user,
-                artist=artist
-            ).delete()
-
-        except (Artist.DoesNotExist, ArtistFollow.DoesNotExist):
-            return Response(
-                dict(
-                    detail=_('Artist not found'),
-                    code='not_found'
-                ), status=status.HTTP_404_NOT_FOUND
+            )
+        
+        artist = get_artist(pk=artist_id)
+        artist_follow = get_artist_follow(
+            user=request.user, 
+            artist=artist
+        ).delete()
+        if not artist or artist_follow:
+            raise exceptions.NotFound(
+                detail=_('Artist not found'),
+                code='not_found'
             )
         return Response(status=status.HTTP_200_OK)
 
@@ -516,7 +507,7 @@ class UserPlaylistsView(views.APIView):
     def post(self, request):
         serializer = UserPlaylistCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        playlist = Playlist.objects.create(name=serializer.validated_data.get('name'))
+        playlist = create_playlist(name=serializer.validated_data.get('name'))
         request.user.playlists.add(playlist)
         return Response(status=status.HTTP_201_CREATED)
     
@@ -533,10 +524,17 @@ class UserPlaylistByIDView(views.APIView):
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
                 ), status=status.HTTP_400_BAD_REQUEST
-            )        
-        queryset = Playlist.objects.filter(pk=playlist_id)
+            )
+        
+        playlist = get_playlist(pk=playlist_id)
+        if not playlist:
+            raise exceptions.NotFound(
+                detail=_('Playlist not found'),
+                code='not_found'
+            )
+        
         page = create_paginator(
-            queryset=queryset, 
+            queryset=playlist, 
             request=request, 
             view=self
         )
@@ -558,17 +556,14 @@ class UserPlaylistByIDView(views.APIView):
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
                 ), status=status.HTTP_400_BAD_REQUEST
-            )        
-        try:
-            Playlist.objects.get(pk=playlist_id).delete()
-        except Playlist.DoesNotExist:
-            return Response(
-                dict(
-                    detail=_('Playlist not found'),
-                    code='not_found'
-                ), status=status.HTTP_404_NOT_FOUND
             )
         
+        playlist = get_playlist(pk=playlist_id).delete()
+        if not playlist:
+            raise exceptions.NotFound(
+                detail=_('Playlist not found'),
+                code='not_found'
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     def put(self, request, playlist_id):
@@ -580,9 +575,16 @@ class UserPlaylistByIDView(views.APIView):
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
                 ), status=status.HTTP_400_BAD_REQUEST
-            )        
-        playlist = get_object_or_404(Playlist, pk=playlist_id)
-        serializer = UserPlaylistByIDUpdateSerializer(playlist, data=request.data)
+            )
+
+        playlist = get_playlist(pk=playlist_id)
+        if not playlist:
+            raise exceptions.NotFound(
+                detail=_('Playlist not found'),
+                code='not_found'
+            )
+        
+        serializer = UserPlaylistByIDUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.validated_data)
@@ -598,8 +600,14 @@ class UserPlaylistByIDView(views.APIView):
                 ), status=status.HTTP_400_BAD_REQUEST
             )
         
-        playlist = get_object_or_404(Playlist, pk=playlist_id)
-        serializer = UserPlaylistByIDUpdateSerializer(playlist, data=request.data)
+        playlist = get_playlist(pk=playlist_id)
+        if not playlist:
+            raise exceptions.NotFound(
+                detail=_('Playlist not found'),
+                code='not_found'
+            )
+        
+        serializer = UserPlaylistByIDUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.validated_data)
@@ -608,21 +616,16 @@ class UserPlaylistByIDView(views.APIView):
 class UserPlaylistTrackByIDView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
-    @transaction.atomic
     def delete(self, request, playlist_id, track_id):
-        try:
-            Playlist.objects.filter(
-                pk=playlist_id,
-                tracks__pk=track_id
-            ).delete()
-        except:
-            return Response(
-                dict(
-                    detail=_('Error removing track in playlist'), 
-                    code='removing_failed'
-                ), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        playlist = get_playlist(
+            pk=playlist_id, 
+            tracks__pk=track_id
+        ).delete()
+        if not playlist:
+            raise exceptions.NotFound(
+                detail=_('Playlist or track not found'),
+                code='not_found'
             )
-
         return Response(status=status.HTTP_204_NO_CONTENT)
         
 @extend_schema(tags=['User Liked Songs'])
