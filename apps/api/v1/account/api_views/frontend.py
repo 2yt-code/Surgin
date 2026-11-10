@@ -442,17 +442,7 @@ class UserFollowingsView(views.APIView):
     def post(self, request):
         serializer = UserFollowingsCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        try:
-            artist = Artist.objects.get(pk=serializer.validated_data.get('artist_id'))
-        except Artist.DoesNotExist:
-            return Response(
-                dict(
-                    detail=_('Artist not found'),
-                    code='not_found'
-                ), status=status.HTTP_404_NOT_FOUND
-            )
-        
+        artist = get_object_or_404(Artist, pk=serializer.validated_data.get('artist_id'))
         ArtistFollow.objects.get_or_create(
             user=request.user,
             artist=artist
@@ -472,20 +462,12 @@ class UserFollowingByIDView(views.APIView):
                     code='invalid_id_format'
                 ), status=status.HTTP_400_BAD_REQUEST
             )        
-        try:
-            artist = Artist.objects.get(pk=artist_id)
-            ArtistFollow.objects.get(
-                user=request.user,
-                artist=artist
-            ).delete()
-
-        except (Artist.DoesNotExist, ArtistFollow.DoesNotExist):
-            return Response(
-                dict(
-                    detail=_('Artist not found'),
-                    code='not_found'
-                ), status=status.HTTP_404_NOT_FOUND
-            )
+        artist = get_object_or_404(Artist, pk=artist_id)
+        get_object_or_404(
+            ArtistFollow, 
+            user=request.user, 
+            artist=artist
+        ).delete()
         return Response(status=status.HTTP_200_OK)
 
 @extend_schema(tags=['User Playlists'])
@@ -532,10 +514,11 @@ class UserPlaylistByIDView(views.APIView):
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
                 ), status=status.HTTP_400_BAD_REQUEST
-            )        
-        queryset = Playlist.objects.filter(pk=playlist_id)
+            )
+        
+        playlist = get_object_or_404(Playlist, pk=playlist_id)
         page = create_paginator(
-            queryset=queryset, 
+            queryset=playlist, 
             request=request, 
             view=self
         )
@@ -558,15 +541,7 @@ class UserPlaylistByIDView(views.APIView):
                     code='invalid_id_format'
                 ), status=status.HTTP_400_BAD_REQUEST
             )        
-        try:
-            Playlist.objects.get(pk=playlist_id).delete()
-        except Playlist.DoesNotExist:
-            return Response(
-                dict(
-                    detail=_('Playlist not found'),
-                    code='not_found'
-                ), status=status.HTTP_404_NOT_FOUND
-            )
+        get_object_or_404(Playlist, pk=playlist_id).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     def put(self, request, playlist_id):
