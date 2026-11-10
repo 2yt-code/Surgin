@@ -606,10 +606,9 @@ class UserPlaylistByIDView(views.APIView):
 class UserPlaylistTrackByIDView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
-    @transaction.atomic
     def delete(self, request, playlist_id, track_id):
         try:
-            Playlist.objects.filter(
+            Playlist.objects.get(
                 pk=playlist_id,
                 tracks__pk=track_id
             ).delete()
