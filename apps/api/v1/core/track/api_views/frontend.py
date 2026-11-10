@@ -1,12 +1,14 @@
 import uuid
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 from rest_framework import (
     views,
-    status
+    status,
+    exceptions
 )
-from drf_spectacular.utils import extend_schema
 
+from apps.api.v1.account.services import check_id_format
 from apps.api.v1.core.artist.permissions import IsArtistMembershipUser
 from apps.api.v1.core.track.models import Genre, Track
 from apps.api.v1.core.track.serializers.frontend import TrackSerializer
@@ -33,9 +35,8 @@ class TrackView(views.APIView):
 @extend_schema(tags=['Track'])
 class TrackByIDView(views.APIView):
     def get(self, request, track_id):
-        try:
-            track_id = uuid.UUID(track_id)
-        except:
+        track_id = check_id_format(id=track_id)
+        if not track_id:
             return Response(
                 dict(
                     detail=_('The ID format is incorrect'), 
@@ -45,13 +46,10 @@ class TrackByIDView(views.APIView):
         
         track = get_track(track_id=track_id)
         if not track:
-            return Response(
-                dict(
-                    detail=_('Track not found'),
-                    code='not_found'
-                ), status=status.HTTP_404_NOT_FOUND
-            )
-        
+            raise exceptions.NotFound(
+                detail=_('Track not found'),
+                code='not_found'
+            )   
         serializer = TrackByIDSerializer(instance=track)
         track.update(serializer.validated_data)
         return Response(track)
