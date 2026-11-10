@@ -1,4 +1,3 @@
-import uuid
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
@@ -10,7 +9,6 @@ from rest_framework import (
 
 from apps.api.v1.account.services import check_id_format
 from apps.api.v1.core.artist.permissions import IsArtistMembershipUser
-from apps.api.v1.core.track.models import Genre, Track
 from apps.api.v1.core.track.serializers.frontend import TrackSerializer
 from apps.api.v1.core.track.services import create_track, get_track
 from apps.api.v1.core.track.serializers import TrackByIDSerializer
