@@ -59,7 +59,6 @@ from apps.api.v1.account.serializers import (
 )
 from apps.api.v1.core.artist.models import Artist, ArtistFollow
 from apps.api.v1.core.playlist.models import Playlist
-from apps.api.v1.core.track.models import Track
 import utils
 
 
@@ -593,7 +592,7 @@ class UserPlaylistByIDView(views.APIView):
                 code='not_found'
             )
         
-        serializer = UserPlaylistByIDUpdateSerializer(playlist, data=request.data)
+        serializer = UserPlaylistByIDUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.validated_data)
@@ -617,7 +616,7 @@ class UserPlaylistByIDView(views.APIView):
                 code='not_found'
             )
         
-        serializer = UserPlaylistByIDUpdateSerializer(playlist, data=request.data)
+        serializer = UserPlaylistByIDUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.validated_data)
@@ -628,18 +627,16 @@ class UserPlaylistTrackByIDView(views.APIView):
 
     def delete(self, request, playlist_id, track_id):
         try:
-            Playlist.objects.get(
-                pk=playlist_id,
+            get_object_or_404(
+                Playlist, 
+                pk=playlist_id, 
                 tracks__pk=track_id
             ).delete()
-        except:
-            return Response(
-                dict(
-                    detail=_('Error removing track in playlist'), 
-                    code='removing_failed'
-                ), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        except Http404:
+            raise exceptions.NotFound(
+                detail=_('Playlist or track not found'),
+                code='not_found'
             )
-
         return Response(status=status.HTTP_204_NO_CONTENT)
         
 @extend_schema(tags=['User Liked Songs'])
