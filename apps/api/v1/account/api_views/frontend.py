@@ -1,8 +1,8 @@
 import uuid
 from django.contrib.auth import get_user_model
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
-from django.db import transaction
 from rest_framework.request import Request
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.response import Response
@@ -25,6 +25,7 @@ from rest_framework import (
     generics,
     permissions,
     views,
+    exceptions
 )
 
 from apps.api.v1.account.models import Device
@@ -442,7 +443,15 @@ class UserFollowingsView(views.APIView):
     def post(self, request):
         serializer = UserFollowingsCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        artist = get_object_or_404(Artist, pk=serializer.validated_data.get('artist_id'))
+
+        try:
+            artist = get_object_or_404(Artist, pk=serializer.validated_data.get('artist_id'))
+        except Http404:
+            raise exceptions.NotFound(
+                detail=_('Artist not found'),
+                code='not_found'
+            )
+        
         ArtistFollow.objects.get_or_create(
             user=request.user,
             artist=artist
@@ -461,13 +470,20 @@ class UserFollowingByIDView(views.APIView):
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
                 ), status=status.HTTP_400_BAD_REQUEST
-            )        
-        artist = get_object_or_404(Artist, pk=artist_id)
-        get_object_or_404(
-            ArtistFollow, 
-            user=request.user, 
-            artist=artist
-        ).delete()
+            )
+        
+        try:
+            artist = get_object_or_404(Artist, pk=artist_id)
+            get_object_or_404(
+                ArtistFollow, 
+                user=request.user, 
+                artist=artist
+            ).delete()
+        except Http404:
+            raise exceptions.NotFound(
+                detail=_('Artist not found'),
+                code='not_found'
+            )
         return Response(status=status.HTTP_200_OK)
 
 @extend_schema(tags=['User Playlists'])
@@ -516,7 +532,14 @@ class UserPlaylistByIDView(views.APIView):
                 ), status=status.HTTP_400_BAD_REQUEST
             )
         
-        playlist = get_object_or_404(Playlist, pk=playlist_id)
+        try:
+            playlist = get_object_or_404(Playlist, pk=playlist_id)
+        except Http404:
+            raise exceptions.NotFound(
+                detail=_('Playlist not found'),
+                code='not_found'
+            )
+        
         page = create_paginator(
             queryset=playlist, 
             request=request, 
@@ -540,8 +563,15 @@ class UserPlaylistByIDView(views.APIView):
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
                 ), status=status.HTTP_400_BAD_REQUEST
-            )        
-        get_object_or_404(Playlist, pk=playlist_id).delete()
+            )
+        
+        try:
+            get_object_or_404(Playlist, pk=playlist_id).delete()
+        except Http404:
+            raise exceptions.NotFound(
+                detail=_('Playlist not found'),
+                code='not_found'
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     def put(self, request, playlist_id):
@@ -553,8 +583,16 @@ class UserPlaylistByIDView(views.APIView):
                     detail=_('The ID format is incorrect'), 
                     code='invalid_id_format'
                 ), status=status.HTTP_400_BAD_REQUEST
-            )        
-        playlist = get_object_or_404(Playlist, pk=playlist_id)
+            )
+
+        try:  
+            playlist = get_object_or_404(Playlist, pk=playlist_id)
+        except Http404:
+            raise exceptions.NotFound(
+                detail=_('Playlist not found'),
+                code='not_found'
+            )
+        
         serializer = UserPlaylistByIDUpdateSerializer(playlist, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -571,7 +609,14 @@ class UserPlaylistByIDView(views.APIView):
                 ), status=status.HTTP_400_BAD_REQUEST
             )
         
-        playlist = get_object_or_404(Playlist, pk=playlist_id)
+        try:
+            playlist = get_object_or_404(Playlist, pk=playlist_id)
+        except Http404:
+            raise exceptions.NotFound(
+                detail=_('Playlist not found'),
+                code='not_found'
+            )
+        
         serializer = UserPlaylistByIDUpdateSerializer(playlist, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
