@@ -9,41 +9,41 @@ from apps.api.v1.core.playlist.models import Playlist
 User = get_user_model()
 
 def get_device(**kwargs):
-    device = Device.objects.filter(kwargs).first()
+    device = Device.objects.filter(**kwargs).first()
     return device
 
 def create_user(**kwargs):
     try:
-        obj = User.objects.create(kwargs)
+        obj = User.objects.create(**kwargs)
     except: return None
     return obj
 
 def create_fingerprint(**kwargs):
     try:
-        obj = FingerPrint.objects.create(kwargs)
+        obj = FingerPrint.objects.create(**kwargs)
     except: return None
     return obj
 
 def create_device(**kwargs):
     try:
-        obj = Device.objects.create(kwargs)
+        obj = Device.objects.create(**kwargs)
     except: return None
     return obj
 
 def get_outstanding_token(**kwargs):
-    obj = OutstandingToken.objects.filter(kwargs)
+    obj = OutstandingToken.objects.filter(**kwargs)
     return obj
 
 def get_or_create_blacklisted_token(**kwargs):
-    obj = BlacklistedToken.objects.get_or_create(kwargs)
+    obj = BlacklistedToken.objects.get_or_create(**kwargs)
     return obj
 
 def get_fingerprint(**kwargs):
-    obj = FingerPrint.objects.filter(kwargs).first()
+    obj = FingerPrint.objects.filter(**kwargs).first()
     return obj
 
 def get_device(**kwargs):
-    obj = Device.objects.filter(kwargs).first()
+    obj = Device.objects.filter(**kwargs).first()
     return obj
 
 def get_user_all():
@@ -51,23 +51,23 @@ def get_user_all():
     return obj
 
 def get_or_create_artist_follow(**kwargs):
-    obj = ArtistFollow.objects.get_or_create(kwargs)
+    obj = ArtistFollow.objects.get_or_create(**kwargs)
     return obj
 
 def create_playlist(**kwargs):
     try:
-        obj = Playlist.objects.create(kwargs)
+        obj = Playlist.objects.create(**kwargs)
     except: return None
     return obj
 
 def get_artist(**kwargs):
-    obj = Artist.objects.filter(kwargs).first()
+    obj = Artist.objects.filter(**kwargs).first()
     return obj
 
 def get_artist_follow(**kwargs):
-    obj = ArtistFollow.objects.filter(kwargs).first()
+    obj = ArtistFollow.objects.filter(**kwargs).first()
     return obj
 
 def get_playlist(**kwargs):
-    obj = Playlist.objects.filter(kwargs).first()
+    obj = Playlist.objects.filter(**kwargs).first()
     return obj
