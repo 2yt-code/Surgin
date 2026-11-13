@@ -4,22 +4,20 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
-from rest_framework.response import Response
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import (
     serializers, 
     exceptions, 
-    status
 )
 from rest_framework_simplejwt.serializers import (
     TokenObtainSerializer,
     TokenRefreshSerializer,
 )
 
-from apps.api.v1.account.models import FingerPrint, Device
+from apps.api.v1.account.models import FingerPrint
 from apps.api.v1.account.constants import RESERVED_NAMES
-from apps.api.v1.account.selectors import create_device, create_fingerprint, create_user, get_fingerprint
+from apps.api.v1.account.selectors import *
 from apps.api.v1.account.services import (
     get_device_id, 
     get_user_agent, 
@@ -28,8 +26,6 @@ from apps.api.v1.account.services import (
     check_fingerprint,
     get_refresh_token
 )
-from apps.api.v1.core.album.models import Album
-from apps.api.v1.core.artist.models import Artist, ArtistFollow
 from apps.api.v1.core.playlist.models import Playlist
 import utils
 
