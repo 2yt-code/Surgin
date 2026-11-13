@@ -10,6 +10,7 @@ import uuid
 
 from apps.api.v1.account.models import Device, FingerPrint
 from apps.api.v1.account.paginations import UserPagination
+from apps.api.v1.account.selectors import *
 import utils
 
 
@@ -97,7 +98,7 @@ def login_account(request: Request, *args, **kwargs):
     try:
         device_id = kwargs.get('device_id')
         key = utils.fingerprint.scheme_key(request)
-        fingerprint_model = FingerPrint.objects.get(
+        fingerprint_model = get_fingerprint(
             device__pk=device_id,
             key=key
         )
@@ -135,7 +136,7 @@ def check_fingerprint(request: Request, *args, **kwargs):
     try:
         device_id = kwargs.get('device_id')
         key = utils.fingerprint.scheme_key(request)
-        fingerprint_model = FingerPrint.objects.get(
+        fingerprint_model = get_fingerprint(
             device__pk=device_id,
             key=key
         )    
