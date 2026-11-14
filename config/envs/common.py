@@ -225,3 +225,11 @@ SIMPLE_JWT = {
 # Media settings
 MEDIA_ROOT = BASE_DIR / env('MEDIA_ROOT')
 MEDIA_URL = env('MEDIA_URL')
+
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = env('EMAIL_HOST')
+EMAIL_PORT = env('EMAIL_PORT')
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_USER_TLS = True
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
