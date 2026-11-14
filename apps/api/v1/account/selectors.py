@@ -9,8 +9,11 @@ from apps.api.v1.core.playlist.models import Playlist
 User = get_user_model()
 
 def get_device(**kwargs):
-    device = Device.objects.filter(**kwargs).first()
-    return device
+    try:
+        obj = Device.objects.get(**kwargs)
+    except Device.DoesNotExist:
+        return None
+    return obj
 
 def create_user(**kwargs):
     try:
@@ -31,7 +34,10 @@ def create_device(**kwargs):
     return obj
 
 def get_outstanding_token(**kwargs):
-    obj = OutstandingToken.objects.filter(**kwargs)
+    try:
+        obj = OutstandingToken.objects.get(**kwargs)
+    except OutstandingToken.DoesNotExist:
+        return None
     return obj
 
 def get_or_create_blacklisted_token(**kwargs):
@@ -39,11 +45,17 @@ def get_or_create_blacklisted_token(**kwargs):
     return obj
 
 def get_fingerprint(**kwargs):
-    obj = FingerPrint.objects.filter(**kwargs).first()
+    try:
+        obj = FingerPrint.objects.get(**kwargs)
+    except FingerPrint.DoesNotExist:
+        return None
     return obj
 
 def get_device(**kwargs):
-    obj = Device.objects.filter(**kwargs).first()
+    try:
+        obj = Device.objects.get(**kwargs)
+    except Device.DoesNotExist:
+        return None
     return obj
 
 def get_user_all():
@@ -61,13 +73,22 @@ def create_playlist(**kwargs):
     return obj
 
 def get_artist(**kwargs):
-    obj = Artist.objects.filter(**kwargs).first()
+    try:
+        obj = Artist.objects.get(**kwargs)
+    except Artist.DoesNotExist:
+        return None
     return obj
 
 def get_artist_follow(**kwargs):
-    obj = ArtistFollow.objects.filter(**kwargs).first()
+    try:
+        obj = ArtistFollow.objects.get(**kwargs)
+    except ArtistFollow.DoesNotExist:
+        return None
     return obj
 
 def get_playlist(**kwargs):
-    obj = Playlist.objects.filter(**kwargs).first()
+    try:
+        obj = Playlist.objects.get(**kwargs)
+    except Playlist.DoesNotExist:
+        return None
     return obj
