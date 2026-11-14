@@ -15,17 +15,9 @@ from rest_framework_simplejwt.serializers import (
     TokenRefreshSerializer,
 )
 
-from apps.api.v1.account.models import FingerPrint
 from apps.api.v1.account.constants import RESERVED_NAMES
 from apps.api.v1.account.selectors import *
-from apps.api.v1.account.services import (
-    get_device_id, 
-    get_user_agent, 
-    login_account,
-    get_client_ip,
-    check_fingerprint,
-    get_refresh_token
-)
+from apps.api.v1.account.services import *
 from apps.api.v1.core.playlist.models import Playlist
 import utils
 
@@ -46,67 +38,21 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
         request = self.context.get('request')
         key = utils.fingerprint.scheme_key(request)
         device_id = get_device_id(request)
-
-        try:
-            fingerprint = get_fingerprint(
-                device__user=self.user.pk,
-                key=key
-            )
-            if device_id:
-                if not fingerprint.device.pk == device_id:
-                    fingerprint.trust_score -= 1
-                    fingerprint.save(update_fields=['trust_score'])
-                    raise exceptions.AuthenticationFailed(
-                        detail=self.default_error_messages['login_failed'],
-                        code='login_failed'
-                    )
-                
-                data['device_id'] = device_id
-            else:
-                data['device_id'] = fingerprint.device.pk
-
-            login_valid = login_account(
-                request, 
-                user=self.user, 
-                device_id=data.get('device_id')
-            )
-            if not login_valid: 
-                fingerprint.trust_score -= 1
-                fingerprint.save(update_fields=['trust_score'])
-                raise exceptions.AuthenticationFailed(
-                    detail=self.default_error_messages['login_failed'],
-                    code='login_failed'
-                )
-
-        except FingerPrint.DoesNotExist:
-            try:
-                with transaction.atomic():
-                    device_model = create_device(
-                        user=self.user,
-                        ip_address=get_client_ip(request),
-                        device_name=get_user_agent(request)
-                    )
-                    create_fingerprint(
-                        device=device_model,
-                        key=key
-                    )
-                    data['device_id'] = device_model.pk
-            except:
-                fingerprint.trust_score -= 1
-                fingerprint.save(update_fields=['trust_score'])
-                raise exceptions.AuthenticationFailed(
-                    detail=self.default_error_messages['login_failed'],
-                    code='login_failed'
-                )
-
+        login_user_data = login_account(
+            user=self.user,
+            key=key,
+            device_id=device_id,
+            request=request,
+            data=data
+        )
         refresh = self.get_token(self.user)
-        data['refresh'] = str(refresh)
-        data['access'] = str(refresh.access_token)
+        login_user_data['refresh'] = str(refresh)
+        login_user_data['access'] = str(refresh.access_token)
 
         if api_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, self.user)
 
-        return data
+        return login_user_data
 
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):
     refresh = serializers.CharField(required=False)

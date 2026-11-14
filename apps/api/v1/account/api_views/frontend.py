@@ -26,13 +26,7 @@ from rest_framework import (
 )
 
 from apps.api.v1.account.selectors import *
-from apps.api.v1.account.services import (
-    check_id_format, 
-    clear_auth_cookie, 
-    create_paginator, 
-    set_access_token, 
-    set_auth_cookies
-)
+from apps.api.v1.account.services import *
 from apps.api.v1.account.swaggers import (
     SchemaResponseSerializer,
     TokenObtainPairResponseSerializer,
@@ -413,39 +407,15 @@ class CustomResetPasswordRequestToken(ResetPasswordRequestToken):
     pass
 
 @extend_schema(tags=['User Followings'])
-class UserFollowingsView(views.APIView):
+class UserFollowingView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
-        artists = request.user.following.all()
-        page = create_paginator(
-            queryset=artists, 
-            request=request, 
-            view=self
-        )
-        serializer = UserFollowingsRetrieveSerializer(
-            instance=page, 
-            many=True
-        )
-        return Response(
-            serializer.data, 
-            status=status.HTTP_200_OK
-        )
+        data = get_user_following(request)
+        return Response(data)
     
     def post(self, request):
-        serializer = UserFollowingsCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        artist = get_artist(pk=serializer.validated_data.get('artist_id'))
-        if not artist:
-            raise exceptions.NotFound(
-                detail=_('Artist not found'),
-                code='not_found'
-            )
-        
-        get_or_create_artist_follow(
-            user=request.user,
-            artist=artist
-        )
+        create_user_following(request)
         return Response(status=status.HTTP_200_OK)
 
 @extend_schema(tags=['User Followings'])
@@ -453,56 +423,19 @@ class UserFollowingByIDView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def delete(self, request, artist_id):
-        artist_id = check_id_format(artist_id)
-        if not artist_id:
-            return Response(
-                dict(
-                    detail=_('The ID format is incorrect'), 
-                    code='invalid_id_format'
-                ), status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        artist = get_artist(pk=artist_id)
-        artist_follow = get_artist_follow(
-            user=request.user, 
-            artist=artist
-        ).delete()
-        if not artist or artist_follow:
-            raise exceptions.NotFound(
-                detail=_('Artist not found'),
-                code='not_found'
-            )
+        delete_user_following(request, artist_id)
         return Response(status=status.HTTP_200_OK)
 
 @extend_schema(tags=['User Playlists'])
-class UserPlaylistsView(views.APIView):
+class UserPlaylistView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
-    # throttle_classes = (UserRateThrottle,) # TODO
     
     def get(self, request):
-        playlists = request.user.owned_playlists.all()
-        if not playlists.exists():
-            playlists.user.collaborative_playlists.all()
-
-        page = create_paginator(
-            queryset=playlists, 
-            request=request, 
-            view=self
-        )
-        serializer = UserPlaylistsRetrieveSerializer(
-            instance=page,
-            many=True
-        )
-        return Response(
-            serializer.data,
-            status=status.HTTP_200_OK
-        )
+        data = get_user_playlist(request)
+        return Response(data)
     
     def post(self, request):
-        serializer = UserPlaylistCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        playlist = create_playlist(name=serializer.validated_data.get('name'))
-        request.user.playlists.add(playlist)
+        create_user_playlist(request)
         return Response(status=status.HTTP_201_CREATED)
     
 @extend_schema(tags=['User Playlists'])
@@ -510,116 +443,27 @@ class UserPlaylistByIDView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, playlist_id):
-        try:
-            playlist_id = uuid.UUID(playlist_id)
-        except:
-            return Response(
-                dict(
-                    detail=_('The ID format is incorrect'), 
-                    code='invalid_id_format'
-                ), status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        playlist = get_playlist(pk=playlist_id)
-        if not playlist:
-            raise exceptions.NotFound(
-                detail=_('Playlist not found'),
-                code='not_found'
-            )
-        
-        page = create_paginator(
-            queryset=playlist, 
-            request=request, 
-            view=self
-        )
-        serializer = UserPlaylistByIDRetrieveSerializer(
-            instance=page,
-            many=True
-        )
-        return Response(
-            serializer.data,
-            status=status.HTTP_200_OK
-        )
+        data = get_user_playlist_by_id(request, playlist_id)
+        return Response(data)
     
     def delete(self, request, playlist_id):
-        try:
-            playlist_id = uuid.UUID(playlist_id)
-        except:
-            return Response(
-                dict(
-                    detail=_('The ID format is incorrect'), 
-                    code='invalid_id_format'
-                ), status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        playlist = get_playlist(pk=playlist_id).delete()
-        if not playlist:
-            raise exceptions.NotFound(
-                detail=_('Playlist not found'),
-                code='not_found'
-            )
+        delete_user_playlist_by_id(playlist_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     def put(self, request, playlist_id):
-        try:
-            playlist_id = uuid.UUID(playlist_id)
-        except:
-            return Response(
-                dict(
-                    detail=_('The ID format is incorrect'), 
-                    code='invalid_id_format'
-                ), status=status.HTTP_400_BAD_REQUEST
-            )
-
-        playlist = get_playlist(pk=playlist_id)
-        if not playlist:
-            raise exceptions.NotFound(
-                detail=_('Playlist not found'),
-                code='not_found'
-            )
-        
-        serializer = UserPlaylistByIDUpdateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.validated_data)
+        data = update_user_playlist_by_id(request, playlist_id)
+        return Response(data)
     
     def patch(self, request, playlist_id):
-        try:
-            playlist_id = uuid.UUID(playlist_id)
-        except:
-            return Response(
-                dict(
-                    detail=_('The ID format is incorrect'), 
-                    code='invalid_id_format'
-                ), status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        playlist = get_playlist(pk=playlist_id)
-        if not playlist:
-            raise exceptions.NotFound(
-                detail=_('Playlist not found'),
-                code='not_found'
-            )
-        
-        serializer = UserPlaylistByIDUpdateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.validated_data)
+        data = update_user_playlist_by_id(request, playlist_id)
+        return Response(data)
     
 @extend_schema(tags=['User Playlists'])
 class UserPlaylistTrackByIDView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def delete(self, request, playlist_id, track_id):
-        playlist = get_playlist(
-            pk=playlist_id, 
-            tracks__pk=track_id
-        ).delete()
-        if not playlist:
-            raise exceptions.NotFound(
-                detail=_('Playlist or track not found'),
-                code='not_found'
-            )
+        delete_user_playlist_track_by_id(playlist_id, track_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
         
 @extend_schema(tags=['User Liked Songs'])

@@ -55,7 +55,7 @@ user_urls = [
     ),
     path(
         'user/following/',
-        api_views.UserFollowingsView.as_view(),
+        api_views.UserFollowingView.as_view(),
         name='user-followings-account'
     ),
     path(
@@ -65,7 +65,7 @@ user_urls = [
     ),
     path(
         'user/playlist/',
-        api_views.UserPlaylistsView.as_view(),
+        api_views.UserPlaylistView.as_view(),
         name='user-playlists-account'
     ),
     path(

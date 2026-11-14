@@ -3,8 +3,10 @@ from django.db import transaction
 from django.core.mail import send_mail
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
+from apps.api.v1.account.serializers.frontend import UserFollowingsCreateSerializer, UserFollowingsRetrieveSerializer, UserPlaylistByIDRetrieveSerializer, UserPlaylistByIDUpdateSerializer, UserPlaylistCreateSerializer, UserPlaylistsRetrieveSerializer
 from django_rest_passwordreset.signals import reset_password_token_created
 from rest_framework.request import Request
+from rest_framework import exceptions, status
 from rest_framework.response import Response
 import uuid
 
@@ -29,7 +31,13 @@ def get_device_id(request: Request):
 def check_id_format(id: str):
     try:
         id = uuid.UUID(id)
-    except: return None
+    except:
+        return Response(
+            dict(
+                detail=_('The ID format is incorrect'), 
+                code='invalid_id_format'
+            ), status=status.HTTP_400_BAD_REQUEST
+        )
     return id
 
 def get_refresh_token(request: Request):
@@ -94,7 +102,7 @@ def set_auth_cookies(
     )
 
 @transaction.atomic
-def login_account(request: Request, *args, **kwargs):
+def check_login_process(request: Request, *args, **kwargs):
     try:
         device_id = kwargs.get('device_id')
         key = utils.fingerprint.scheme_key(request)
@@ -181,15 +189,191 @@ def password_reset_token_created(
         recipient_list=[user.email],
     )
 
-def create_paginator(
-        queryset, 
-        request: Request, 
-        view
-):
+def create_paginator(queryset, request: Request):
     paginator = UserPagination()
     page = paginator.paginate_queryset(
             queryset=queryset, 
-            request=request, 
-            view=view
+            request=request
         )
     return page
+
+@transaction.atomic
+def login_account(
+    user: get_user_model, 
+    key: str, 
+    device_id: str,
+    request: Request,
+    data
+):
+        from apps.api.v1.account.serializers import CustomTokenObtainSerializer
+        try:
+            fingerprint = get_fingerprint(
+                device__user=user,
+                key=key
+            )
+            if not fingerprint:
+                raise
+            
+            if device_id:
+                if not fingerprint.device.pk == device_id:
+                    fingerprint.trust_score -= 1
+                    fingerprint.save(update_fields=['trust_score'])
+                    raise exceptions.AuthenticationFailed(
+                        detail=CustomTokenObtainSerializer.default_error_messages['login_failed'],
+                        code='login_failed'
+                    )
+                
+                data['device_id'] = device_id
+            else:
+                data['device_id'] = fingerprint.device.pk
+
+            login_valid = check_login_process(
+                request, 
+                user=user, 
+                device_id=data.get('device_id')
+            )
+            if not login_valid: 
+                fingerprint.trust_score -= 1
+                fingerprint.save(update_fields=['trust_score'])
+                raise exceptions.AuthenticationFailed(
+                    detail=CustomTokenObtainSerializer.default_error_messages['login_failed'],
+                    code='login_failed'
+                )
+
+        except:
+            try:
+                device_model = create_device(
+                    user=user,
+                    ip_address=get_client_ip(request),
+                    device_name=get_user_agent(request)
+                )
+                create_fingerprint(
+                    device=device_model,
+                    key=key
+                )
+                data['device_id'] = device_model.pk
+            except:
+                fingerprint.trust_score -= 1
+                fingerprint.save(update_fields=['trust_score'])
+                raise exceptions.AuthenticationFailed(
+                    detail=CustomTokenObtainSerializer.default_error_messages['login_failed'],
+                    code='login_failed'
+                )
+        return data
+
+def get_user_following(request: Request):
+    artists = request.user.following.all()
+    page = create_paginator(
+        queryset=artists, 
+        request=request
+    )
+    serializer = UserFollowingsRetrieveSerializer(
+        instance=page, 
+        many=True
+    )
+    return serializer.data
+
+def create_user_following(request: Request):
+    serializer = UserFollowingsCreateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    artist = get_artist(pk=serializer.validated_data.get('artist_id'))
+    if not artist:
+        raise exceptions.NotFound(
+            detail=_('Artist not found'),
+            code='not_found'
+        )
+        
+    get_or_create_artist_follow(
+        user=request.user,
+        artist=artist
+    )
+
+def delete_user_following(request: Request, id: str):
+    artist_id = check_id_format(id)        
+    artist = get_artist(pk=artist_id)
+    artist_follow = get_artist_follow(
+        user=request.user, 
+        artist=artist
+    ).delete()
+    if not artist or artist_follow:
+        raise exceptions.NotFound(
+            detail=_('Artist not found'),
+            code='not_found'
+        )
+
+def get_user_playlist(request: Request):
+    playlists = request.user.owned_playlists.all()
+    if not playlists.exists():
+        playlists.user.collaborative_playlists.all()
+
+    page = create_paginator(
+        queryset=playlists, 
+        request=request, 
+    )
+    serializer = UserPlaylistsRetrieveSerializer(
+        instance=page,
+        many=True
+    )
+    return serializer.data
+
+def create_user_playlist(request: Request):
+    serializer = UserPlaylistCreateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    playlist = create_playlist(name=serializer.validated_data.get('name'))
+    request.user.playlists.add(playlist)
+
+def get_user_playlist_by_id(request: Request, id: str):
+    playlist_id = check_id_format(id)  
+    playlist = get_playlist(pk=playlist_id)
+    if not playlist:
+        raise exceptions.NotFound(
+            detail=_('Playlist not found'),
+            code='not_found'
+        )
+        
+    page = create_paginator(
+        queryset=playlist, 
+        request=request, 
+    )
+    serializer = UserPlaylistByIDRetrieveSerializer(
+        instance=page,
+        many=True
+    )
+    return serializer.data
+
+def delete_user_playlist_by_id(id: str):
+    playlist_id = check_id_format(id)
+    playlist = get_playlist(pk=playlist_id).delete()
+    if not playlist:
+        raise exceptions.NotFound(
+            detail=_('Playlist not found'),
+            code='not_found'
+        )
+
+def update_user_playlist_by_id(request: Request, id: str):
+    playlist_id = check_id_format(id)
+    playlist = get_playlist(pk=playlist_id)
+    if not playlist:
+        raise exceptions.NotFound(
+            detail=_('Playlist not found'),
+            code='not_found'
+        )
+        
+    serializer = UserPlaylistByIDUpdateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return serializer.validated_data
+
+def delete_user_playlist_track_by_id(playlist_id, track_id):
+    playlist_id = check_id_format(playlist_id)
+    track_id = check_id_format(track_id)
+    
+    playlist = get_playlist(
+    pk=playlist_id, 
+    tracks__pk=track_id
+    ).delete()
+    if not playlist:
+        raise exceptions.NotFound(
+            detail=_('Playlist or track not found'),
+            code='not_found'
+        )
