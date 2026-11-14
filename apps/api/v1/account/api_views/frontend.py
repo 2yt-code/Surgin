@@ -1,6 +1,7 @@
-import uuid
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 from rest_framework.request import Request
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.response import Response
@@ -22,11 +23,8 @@ from rest_framework import (
     generics,
     permissions,
     views,
-    exceptions
 )
 
-from apps.api.v1.account.selectors import *
-from apps.api.v1.account.services import *
 from apps.api.v1.account.swaggers import (
     SchemaResponseSerializer,
     TokenObtainPairResponseSerializer,
@@ -35,20 +33,33 @@ from apps.api.v1.account.swaggers import (
     PasswordResetResponse,
     PasswordResetErrorResponse
 )
+from apps.api.v1.account.selectors import (
+    get_device, 
+    get_user_all
+)
+from apps.api.v1.account.services import (
+    clear_auth_cookie, 
+    create_user_following, 
+    create_user_playlist, 
+    delete_user_following, 
+    delete_user_playlist_by_id, 
+    delete_user_playlist_track_by_id, 
+    get_user_following, 
+    get_user_playlist, 
+    get_user_playlist_by_id, 
+    set_access_token, 
+    set_auth_cookies, 
+    update_user_playlist_by_id,
+    user_activation_account,
+    user_change_password,
+    user_logout
+)
 from apps.api.v1.account.serializers import (
     RegisterSerializer,
     UserSerializer,
-    ChangePasswordSerializer,
     CustomTokenObtainPairSerializer,
-    CustomTokenRefreshSerializer,
-    UserFollowingsRetrieveSerializer,
-    UserPlaylistsRetrieveSerializer,
-    UserPlaylistByIDRetrieveSerializer,
-    UserPlaylistCreateSerializer,
-    UserPlaylistByIDUpdateSerializer,
-    UserFollowingsCreateSerializer
+    CustomTokenRefreshSerializer
 )
-import utils
 
 
 User = get_user_model()
@@ -202,7 +213,7 @@ class CustomTokenRefreshView(TokenViewBase):
         )
     }
 )
-class RegisterView(generics.CreateAPIView):
+class UserRegisterView(generics.CreateAPIView):
     queryset = get_user_all()
     serializer_class = RegisterSerializer
     
@@ -212,6 +223,12 @@ class RegisterView(generics.CreateAPIView):
         serializer.save()
         return Response(status=status.HTTP_201_CREATED)
 
+@extend_schema(tags=['User Authentication'])
+class UserActivationAccount(views.APIView):
+    def get(self, request, uidb64, token):
+        user_activation_account(uidb64, token)
+        return Response(status=status.HTTP_200_OK)
+    
 @extend_schema(
     tags=['User Information'],
     summary=_('User account information'),
@@ -283,45 +300,21 @@ class UserView(generics.RetrieveUpdateAPIView):
         )
     }
 )
-class LogoutView(views.APIView):
+class UserLogoutView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request):
-        key = utils.fingerprint.scheme_key(request)
-
-        try:
-            outstanding_tokens = get_outstanding_token(
-                user=request.user
-            )
-            for token in outstanding_tokens:
-                get_or_create_blacklisted_token(token=token)
-
-            get_device(
-                user=request.user, 
-                fingerprint__key=key
-            ).delete()
-
-        except:
-            return Response(
-                dict(
-                    detail=_('Failed to logout of the account'),
-                    code='logout_failed'
-                ), status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        
+        user_logout(request)
         response = Response(status=status.HTTP_204_NO_CONTENT)
         clear_auth_cookie(response=response)
         return response
 
 @extend_schema(tags=['User Authentication'])
-class ChangePasswordView(views.APIView):
+class UserChangePasswordView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def patch(self, request):
-        serializer = ChangePasswordSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        request.user.set_password(serializer.validated_data.get('new_password'))
-        request.user.save(update_fields=['password'])
+        user_change_password(request)
         return Response(status=status.HTTP_200_OK)
     
 @extend_schema(

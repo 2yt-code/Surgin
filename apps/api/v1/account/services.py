@@ -1,23 +1,52 @@
 from django.utils import timezone
 from django.db import transaction
 from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.core.mail import send_mail
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
-from apps.api.v1.account.serializers.frontend import UserFollowingsCreateSerializer, UserFollowingsRetrieveSerializer, UserPlaylistByIDRetrieveSerializer, UserPlaylistByIDUpdateSerializer, UserPlaylistCreateSerializer, UserPlaylistsRetrieveSerializer
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 from django_rest_passwordreset.signals import reset_password_token_created
 from rest_framework.request import Request
 from rest_framework import exceptions, status
 from rest_framework.response import Response
 import uuid
 
-from apps.api.v1.account.models import Device, FingerPrint
 from apps.api.v1.account.paginations import UserPagination
-from apps.api.v1.account.selectors import *
+from apps.api.v1.account.models import Device
+from apps.api.v1.account.selectors import (
+    create_device, 
+    create_fingerprint, 
+    create_playlist,
+    create_user, 
+    get_artist, 
+    get_artist_follow,
+    get_device, 
+    get_fingerprint, 
+    get_or_create_artist_follow,
+    get_or_create_blacklisted_token,
+    get_outstanding_token, 
+    get_playlist
+)
+from apps.api.v1.account.serializers.frontend import (
+    ChangePasswordSerializer,
+    UserFollowingsCreateSerializer, 
+    UserFollowingsRetrieveSerializer, 
+    UserPlaylistByIDRetrieveSerializer, 
+    UserPlaylistByIDUpdateSerializer, 
+    UserPlaylistCreateSerializer, 
+    UserPlaylistsRetrieveSerializer
+)
 import utils
 
 
 ACCESS_TOKEN_MAX_AGE = 20 * 60
 REFRESH_TOKEN_MAX_AGE_DEVICE_UUID = 7 * 24 * 60 * 60
+
+User = get_user_model()
 
 def get_user_agent(request: Request):
     return request.META.get('HTTP_USER_AGENT', '')
@@ -199,7 +228,7 @@ def create_paginator(queryset, request: Request):
 
 @transaction.atomic
 def login_account(
-    user: get_user_model, 
+    user, 
     key: str, 
     device_id: str,
     request: Request,
@@ -260,6 +289,15 @@ def login_account(
                     code='login_failed'
                 )
         return data
+
+def create_user_account(data):
+    data.pop('confirm_password')
+    user = create_user(**data)
+    user.set_password(data.get('password'))
+    user.is_active = False
+    user.save()
+    send_activation_email(user)
+    return user
 
 def get_user_following(request: Request):
     artists = request.user.following.all()
@@ -376,4 +414,67 @@ def delete_user_playlist_track_by_id(playlist_id, track_id):
         raise exceptions.NotFound(
             detail=_('Playlist or track not found'),
             code='not_found'
+        )
+
+def send_activation_email(user):
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    activation_link = f'https://{settings.DOMAIN}/account/activate/{uid}/{token}/'
+    send_mail(
+        subject='Activate your account',
+        message=activation_link,
+        from_email=settings.EMAIL_HOST_USER,
+        recipient_list=[user.email]
+    )
+
+def user_change_password(request: Request):
+    serializer = ChangePasswordSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    request.user.set_password(serializer.validated_data.get('new_password'))
+    request.user.save(update_fields=['password'])
+
+def user_logout(request: Request):
+    key = utils.fingerprint.scheme_key(request)
+    try:
+        outstanding_tokens = get_outstanding_token(
+            user=request.user
+        )
+        for token in outstanding_tokens:
+            get_or_create_blacklisted_token(token=token)
+
+        get_device(
+            user=request.user, 
+            fingerprint__key=key
+        ).delete()
+
+    except:
+        return Response(
+            dict(
+                detail=_('Logout unsuccessful'),
+                code='logout_unsuccessful'
+            ), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+def user_activation_account(uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except:
+        return Response(
+            dict(
+                detail=_('Invalid link'),
+                code='invalid_link'
+            ), status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save(update_fields=['is_active'])
+        
+    else:
+        return Response(
+            dict(
+                detail=_('Invalid link'),
+                code='invalid_link'
+            ), status=status.HTTP_400_BAD_REQUEST
         )
