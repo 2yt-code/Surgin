@@ -2,7 +2,6 @@ from typing import Dict, Any
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
-from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -16,8 +15,13 @@ from rest_framework_simplejwt.serializers import (
 )
 
 from apps.api.v1.account.constants import RESERVED_NAMES
-from apps.api.v1.account.selectors import *
-from apps.api.v1.account.services import *
+from apps.api.v1.account.services import (
+    check_fingerprint,
+    create_user_account, 
+    get_device_id, 
+    get_refresh_token, 
+    login_account
+)
 from apps.api.v1.core.playlist.models import Playlist
 import utils
 
@@ -134,10 +138,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data.pop('confirm_password')
-        user = create_user(**validated_data)
-        user.set_password(validated_data.get('password'))
-        user.save()
+        user = create_user_account(**validated_data)
         return user
     
 class ChangePasswordSerializer(serializers.Serializer):
