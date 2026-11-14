@@ -18,18 +18,18 @@ authentication_urls = [
     ),
     path(
         'auth/register/', 
-        api_views.RegisterView.as_view(), 
-        name='register-account'
+        api_views.UserRegisterView.as_view(), 
+        name='user-register-account'
     ),
     path(
         'auth/logout/', 
-        api_views.LogoutView.as_view(), 
-        name='logout-account'
+        api_views.UserLogoutView.as_view(), 
+        name='user-logout-account'
     ),
     path(
         'auth/change-password/',
-        api_views.ChangePasswordView.as_view(),
-        name='change-password'
+        api_views.UserChangePasswordView.as_view(),
+        name='user-change-password'
     ),
     path(
         'auth/password-reset/', 
@@ -45,6 +45,11 @@ authentication_urls = [
         'auth/password-reset/validate-token/', 
         api_views.CustomResetPasswordValidateToken.as_view(), 
         name='reset-password-validate'
+    ),
+    path(
+        'auth/activate/<str:uidb64>/<str:token>/',
+        api_views.UserActivationAccount.as_view(),
+        name='user-activate-account'
     )
 ]
 user_urls = [
