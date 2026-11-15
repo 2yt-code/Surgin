@@ -92,3 +92,10 @@ def get_playlist(**kwargs):
     except Playlist.DoesNotExist:
         return None
     return obj
+
+def get_user(**kwargs):
+    try:
+        obj = User.objects.get(**kwargs)
+    except User.DoesNotExist:
+        return None
+    return obj
