@@ -9,10 +9,7 @@ from apps.api.v1.core.playlist.models import Playlist
 User = get_user_model()
 
 def get_device(**kwargs):
-    try:
-        obj = Device.objects.get(**kwargs)
-    except Device.DoesNotExist:
-        return None
+    obj = Device.objects.get(**kwargs)
     return obj
 
 def create_user(**kwargs):
@@ -34,10 +31,7 @@ def create_device(**kwargs):
     return obj
 
 def get_outstanding_token(**kwargs):
-    try:
-        obj = OutstandingToken.objects.get(**kwargs)
-    except OutstandingToken.DoesNotExist:
-        return None
+    obj = OutstandingToken.objects.filter(**kwargs)
     return obj
 
 def get_or_create_blacklisted_token(**kwargs):
