@@ -1,15 +1,13 @@
 from django.utils import timezone
 from django.db import transaction
 from django.core.mail import send_mail
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user, get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
-from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from django_rest_passwordreset.signals import reset_password_token_created
 from rest_framework.request import Request
 from rest_framework import exceptions, status
 from rest_framework.response import Response
@@ -199,24 +197,6 @@ def check_fingerprint(request: Request, *args, **kwargs):
             fingerprint_model.trust_score -= 1
             fingerprint_model.save(update_fields=['trust_score'])
         return False
-
-# TODO
-@receiver(reset_password_token_created)
-def password_reset_token_created(
-    sender,
-    instance,
-    reset_password_token,
-    *args,
-    **kwargs,
-):
-    user = reset_password_token.user
-
-    send_mail(
-        subject=_('Reset Password'),
-        message=_(f'Your token for reset password: {reset_password_token.key}'),
-        from_email=None,
-        recipient_list=[user.email],
-    )
 
 def create_paginator(queryset, request: Request):
     paginator = UserPagination()
@@ -416,12 +396,13 @@ def delete_user_playlist_track_by_id(playlist_id, track_id):
             code='not_found'
         )
 
+# TODO
 def send_activation_email(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     activation_link = f'https://{settings.DOMAIN}/account/activate/{uid}/{token}/'
     send_mail(
-        subject='Activate your account',
+        subject=_('Activate your account'),
         message=activation_link,
         from_email=settings.EMAIL_HOST_USER,
         recipient_list=[user.email]
@@ -458,7 +439,7 @@ def user_logout(request: Request):
 def user_activation_account(uidb64, token):
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
-        user = User.objects.get(pk=uid)
+        user = get_user(pk=uid)
     except:
         return Response(
             dict(
