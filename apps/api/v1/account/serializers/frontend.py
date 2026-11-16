@@ -160,39 +160,71 @@ class UserSerializer(serializers.ModelSerializer):
 class UserFollowingsRetrieveSerializer(serializers.Serializer):
     artist = serializers.SlugRelatedField(
         read_only=True,
-        slug_field='pk'
+        slug_field='id'
     )
 
 class UserFollowingsCreateSerializer(serializers.Serializer):
     artist_id = serializers.UUIDField()
 
-class UserPlaylistTrackSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Playlist
-        fields = ['id', 'name'] # TODO
-
 class UserPlaylistByIDRetrieveSerializer(serializers.ModelSerializer):
+    owner = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='id'
+    )
+    collaborators = serializers.SlugRelatedField(
+        many=True,
+        read_only=True,
+        slug_field='id'
+    )
+    tracks = serializers.SlugRelatedField(
+        many=True,
+        read_only=True,
+        slug_field='id'
+    )
+    albums = serializers.SlugRelatedField(
+        many=True,
+        read_only=True,
+        slug_field='id'
+    )
+
     class Meta:
         model = Playlist
-        fields = ['id', 'name'] # TODO
+        fields = [
+            'id', 
+            'name',
+            'description',
+            'baner',
+            'owner',
+            'collaborators',
+            'tracks',
+            'albums'
+
+        ]
 
 class UserPlaylistByIDUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Playlist
-        fields = ['name'] # TODO
+        fields = [
+            'name',
+            'description',
+            'baner',
+            # 'owner',
+            # 'collaborators',
+            # 'tracks',
+            # 'albums' # TODO
+        ]
+
 
 class UserPlaylistsRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Playlist
-        fields = ['id', 'name'] # TODO
+        fields = ['id']
 
 class UserPlaylistCreateSerializer(serializers.Serializer): # TODO
-    name = serializers.CharField(
-        max_length=50,
-    )
+    name = serializers.CharField(max_length=50)
     description = serializers.CharField(max_length=300)
     baner = serializers.ImageField()
 
 class UserActivationAccountSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=40)
-    uid = serializers.CharField()
+    user_id = serializers.CharField()
