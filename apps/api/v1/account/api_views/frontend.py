@@ -228,7 +228,7 @@ class UserActivationAccount(views.APIView):
         serializer = UserActivationAccountSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user_activation_account(
-            uidb64=serializer.validated_data.get('uid'),
+            uidb64=serializer.validated_data.get('user_id'),
             token=serializer.validated_data.get('token'),
         )
         return Response(status=status.HTTP_200_OK)
@@ -440,7 +440,7 @@ class UserPlaylistByIDView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, playlist_id):
-        data = get_user_playlist_by_id(request, playlist_id)
+        data = get_user_playlist_by_id(playlist_id)
         return Response(data)
     
     def delete(self, request, playlist_id):
