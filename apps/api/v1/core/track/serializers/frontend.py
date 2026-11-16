@@ -20,6 +20,7 @@ class TrackByIDSerializer(serializers.ModelSerializer):
     class Meta:
         model = Track
         fields = [
+            'id',
             'title',
             'cover',
             'audio_file',
