@@ -1,13 +1,14 @@
 from django.utils import timezone
 from django.db import transaction
 from django.core.mail import send_mail
-from django.contrib.auth import get_user, get_user_model
+from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django_rest_passwordreset.signals import reset_password_token_created
 from rest_framework.request import Request
 from rest_framework import exceptions, status
 from rest_framework.response import Response
@@ -27,7 +28,8 @@ from apps.api.v1.account.selectors import (
     get_or_create_artist_follow,
     get_or_create_blacklisted_token,
     get_outstanding_token, 
-    get_playlist
+    get_playlist,
+    get_user
 )
 from apps.api.v1.account.serializers.frontend import (
     ChangePasswordSerializer,
@@ -340,7 +342,7 @@ def create_user_playlist(request: Request):
     playlist = create_playlist(name=serializer.validated_data.get('name'))
     request.user.playlists.add(playlist)
 
-def get_user_playlist_by_id(request: Request, id: str):
+def get_user_playlist_by_id(id: str):
     playlist_id = check_id_format(id)  
     playlist = get_playlist(pk=playlist_id)
     if not playlist:
@@ -349,14 +351,7 @@ def get_user_playlist_by_id(request: Request, id: str):
             code='not_found'
         )
         
-    page = create_paginator(
-        queryset=playlist, 
-        request=request, 
-    )
-    serializer = UserPlaylistByIDRetrieveSerializer(
-        instance=page,
-        many=True
-    )
+    serializer = UserPlaylistByIDRetrieveSerializer(instance=playlist)
     return serializer.data
 
 def delete_user_playlist_by_id(id: str):
@@ -396,7 +391,6 @@ def delete_user_playlist_track_by_id(playlist_id, track_id):
             code='not_found'
         )
 
-# TODO
 def send_activation_email(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
