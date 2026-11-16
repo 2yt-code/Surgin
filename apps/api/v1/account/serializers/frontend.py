@@ -227,4 +227,4 @@ class UserPlaylistCreateSerializer(serializers.Serializer): # TODO
 
 class UserActivationAccountSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=40)
-    user_id = serializers.CharField()
+    uid = serializers.CharField()

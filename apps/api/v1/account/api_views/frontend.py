@@ -228,7 +228,7 @@ class UserActivationAccount(views.APIView):
         serializer = UserActivationAccountSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user_activation_account(
-            uidb64=serializer.validated_data.get('user_id'),
+            uidb64=serializer.validated_data.get('uid'),
             token=serializer.validated_data.get('token'),
         )
         return Response(status=status.HTTP_200_OK)
