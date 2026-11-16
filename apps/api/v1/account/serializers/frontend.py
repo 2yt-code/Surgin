@@ -15,13 +15,6 @@ from rest_framework_simplejwt.serializers import (
 )
 
 from apps.api.v1.account.constants import RESERVED_NAMES
-from apps.api.v1.account.services import (
-    check_fingerprint,
-    create_user_account, 
-    get_device_id, 
-    get_refresh_token, 
-    login_account
-)
 from apps.api.v1.core.playlist.models import Playlist
 import utils
 
@@ -38,6 +31,7 @@ class CustomTokenObtainPairSerializer(CustomTokenObtainSerializer):
     token_class = RefreshToken
 
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, str]:
+        from apps.api.v1.account.services import get_device_id, login_account
         data = super().validate(attrs)
         request = self.context.get('request')
         key = utils.fingerprint.scheme_key(request)
@@ -62,6 +56,12 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
     refresh = serializers.CharField(required=False)
 
     def validate(self, attrs):
+        from apps.api.v1.account.services import (
+            get_refresh_token, 
+            check_fingerprint, 
+            get_device_id
+        )
+
         request = self.context.get('request')
         refresh_token = get_refresh_token(request)
         if not refresh_token:
@@ -138,6 +138,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        from apps.api.v1.account.services import create_user_account
+        
         user = create_user_account(**validated_data)
         return user
     
@@ -190,3 +192,7 @@ class UserPlaylistCreateSerializer(serializers.Serializer): # TODO
     )
     description = serializers.CharField(max_length=300)
     baner = serializers.ImageField()
+
+class UserActivationAccountSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=40)
+    uid = serializers.CharField()
