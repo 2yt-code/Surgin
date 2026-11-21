@@ -49,6 +49,7 @@ from apps.api.v1.account.services import (
     set_auth_cookies, 
     update_user_playlist_by_id,
     user_activation_account,
+    user_add_track_playlist,
     user_change_password,
     user_logout
 )
@@ -462,12 +463,14 @@ class UserPlaylistTrackByIDView(views.APIView):
     def delete(self, request, playlist_id, track_id):
         delete_user_playlist_track_by_id(playlist_id, track_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
-
+    
+@extend_schema(tags=['User Playlists'])
 class UserPlaylistTrackView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, playlist_id):
-        pass
+        user_add_track_playlist(request, playlist_id)
+        return Response(status=status.HTTP_200_OK)
         
 @extend_schema(tags=['User Liked Songs'])
 class UserLikedSongsView(views.APIView):
