@@ -50,13 +50,6 @@ class Playlist(BaseModel):
         related_query_name='playlist_tracks',
         blank=True
     )
-    albums = models.ManyToManyField(
-        Album,
-        verbose_name=_('albums'),
-        related_name='user_playlist_tracks',
-        related_query_name='playlist_albums',
-        blank=True
-    )
 
     class Meta:
         verbose_name = _('playlist')
