@@ -40,11 +40,6 @@ class Artist(BaseModel):
         _('verified'),
         default=False
     )
-    slug = models.SlugField(
-        _('slug'),
-        max_length=120,
-        unique=True
-    )
     artist_type = models.CharField(
         _('artist type'),
         max_length=10,
