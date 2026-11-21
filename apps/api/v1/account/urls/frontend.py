@@ -79,6 +79,11 @@ user_urls = [
         name='user-playlist-by-id-account'
     ),
     path(
+        'user/playlist/<str:playlist_id>/track/',
+        api_views.UserPlaylistTrackView.as_view(),
+        name='user-playlist-track'
+    ),
+    path(
         'user/playlist/<str:playlist_id>/track/<str:track_id>/',
         api_views.UserPlaylistTrackByIDView.as_view(),
         name='user-playlist-by-id-account'
