@@ -5,7 +5,7 @@ from apps.api.v1.account.models import Device, FingerPrint
 from apps.api.v1.core.album.models import Album
 from apps.api.v1.core.artist.models import Artist, ArtistFollow
 from apps.api.v1.core.playlist.models import Playlist
-from apps.api.v1.core.track.models import TrackCredit
+from apps.api.v1.core.track.models import Track, TrackCredit
 
 
 User = get_user_model()
@@ -108,4 +108,11 @@ def get_track_credit_by_filter_method(**kwargs):
 
 def get_album_by_filter_method(**kwargs):
     obj = Album.objects.filter(**kwargs)
+    return obj
+
+def get_track(**kwargs):
+    try:
+        obj = Track.objects.get(**kwargs)
+    except Track.DoesNotExist:
+        return None
     return obj
