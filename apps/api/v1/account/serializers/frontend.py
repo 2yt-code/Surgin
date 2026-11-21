@@ -15,7 +15,10 @@ from rest_framework_simplejwt.serializers import (
 )
 
 from apps.api.v1.account.constants import RESERVED_NAMES
+from apps.api.v1.core.artist.models import Artist
+from apps.api.v1.core.artist.serializers import ArtistBasicInformationSerializer
 from apps.api.v1.core.playlist.models import Playlist
+from apps.api.v1.core.track.serializers import TrackBasicInformationSerializer
 import utils
 
 
@@ -157,35 +160,36 @@ class UserSerializer(serializers.ModelSerializer):
             'language'
         ]
 
-class UserFollowingsRetrieveSerializer(serializers.Serializer):
-    artist = serializers.SlugRelatedField(
-        read_only=True,
-        slug_field='id'
-    )
+class UserBasicInformationSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    username = serializers.CharField()
 
+class UserFollowingsRetrieveSerializer(serializers.Serializer):
+    artist = serializers.SerializerMethodField()
+
+    def get_artist(self, obj):
+        artist = obj.artist
+        return ArtistBasicInformationSerializer(instance=artist).data
+    
 class UserFollowingsCreateSerializer(serializers.Serializer):
     artist_id = serializers.UUIDField()
 
 class UserPlaylistByIDRetrieveSerializer(serializers.ModelSerializer):
-    owner = serializers.SlugRelatedField(
-        read_only=True,
-        slug_field='id'
-    )
-    collaborators = serializers.SlugRelatedField(
-        many=True,
-        read_only=True,
-        slug_field='id'
-    )
-    tracks = serializers.SlugRelatedField(
-        many=True,
-        read_only=True,
-        slug_field='id'
-    )
-    albums = serializers.SlugRelatedField(
-        many=True,
-        read_only=True,
-        slug_field='id'
-    )
+    owner = serializers.SerializerMethodField()
+    collaborators = serializers.SerializerMethodField()
+    tracks = serializers.SerializerMethodField()
+
+    def get_owner(self, obj):
+        user = obj.owner
+        return UserBasicInformationSerializer(instance=user).data
+
+    def get_collaborators(self, obj):
+        users = obj.collaborators.all()
+        return UserBasicInformationSerializer(instance=users, many=True).data
+
+    def get_tracks(self, obj):
+        tracks = obj.tracks.all()
+        return TrackBasicInformationSerializer(instance=tracks, many=True).data
 
     class Meta:
         model = Playlist
@@ -196,9 +200,7 @@ class UserPlaylistByIDRetrieveSerializer(serializers.ModelSerializer):
             'baner',
             'owner',
             'collaborators',
-            'tracks',
-            'albums'
-
+            'tracks'
         ]
 
 class UserPlaylistByIDUpdateSerializer(serializers.ModelSerializer):
@@ -208,12 +210,8 @@ class UserPlaylistByIDUpdateSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'baner',
-            # 'owner',
-            # 'collaborators',
-            # 'tracks',
-            # 'albums' # TODO
+            'is_public'
         ]
-
 
 class UserPlaylistsRetrieveSerializer(serializers.ModelSerializer):
     class Meta:

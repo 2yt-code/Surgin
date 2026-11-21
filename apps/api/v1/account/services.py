@@ -453,3 +453,6 @@ def user_activation_account(uidb64, token):
                 code='invalid_link'
             ), status=status.HTTP_400_BAD_REQUEST
         )
+
+def user_add_track_playlist(playlist_id):
+    playlist = get_playlist

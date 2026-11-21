@@ -462,6 +462,12 @@ class UserPlaylistTrackByIDView(views.APIView):
     def delete(self, request, playlist_id, track_id):
         delete_user_playlist_track_by_id(playlist_id, track_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class UserPlaylistTrackView(views.APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, playlist_id):
+        pass
         
 @extend_schema(tags=['User Liked Songs'])
 class UserLikedSongsView(views.APIView):
