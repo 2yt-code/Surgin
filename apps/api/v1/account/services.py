@@ -8,7 +8,6 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from django_rest_passwordreset.signals import reset_password_token_created
 from rest_framework.request import Request
 from rest_framework import exceptions, status
 from rest_framework.response import Response
@@ -31,13 +30,15 @@ from apps.api.v1.account.selectors import (
     get_playlist,
     get_user
 )
-from apps.api.v1.account.serializers.frontend import (
+from apps.api.v1.account.selectors import get_track
+from apps.api.v1.account.serializers import (
     ChangePasswordSerializer,
     UserFollowingsCreateSerializer, 
     UserFollowingsRetrieveSerializer, 
     UserPlaylistByIDRetrieveSerializer, 
     UserPlaylistByIDUpdateSerializer, 
-    UserPlaylistCreateSerializer, 
+    UserPlaylistCreateSerializer,
+    UserPlaylistTrackByIDCreateSerializer, 
     UserPlaylistsRetrieveSerializer
 )
 import utils
@@ -314,17 +315,18 @@ def delete_user_following(request: Request, id: str):
     artist_follow = get_artist_follow(
         user=request.user, 
         artist=artist
-    ).delete()
-    if not artist or artist_follow:
+    )
+    if not artist or not artist_follow:
         raise exceptions.NotFound(
             detail=_('Artist not found'),
             code='not_found'
         )
-
+    artist_follow.delete()
+    
 def get_user_playlist(request: Request):
     playlists = request.user.owned_playlists.all()
     if not playlists.exists():
-        playlists.user.collaborative_playlists.all()
+        request.user.collaborative_playlists.all()
 
     page = create_paginator(
         queryset=playlists, 
@@ -356,12 +358,13 @@ def get_user_playlist_by_id(id: str):
 
 def delete_user_playlist_by_id(id: str):
     playlist_id = check_id_format(id)
-    playlist = get_playlist(pk=playlist_id).delete()
+    playlist = get_playlist(pk=playlist_id)
     if not playlist:
         raise exceptions.NotFound(
             detail=_('Playlist not found'),
             code='not_found'
         )
+    playlist.delete()
 
 def update_user_playlist_by_id(request: Request, id: str):
     playlist_id = check_id_format(id)
@@ -381,16 +384,16 @@ def delete_user_playlist_track_by_id(playlist_id, track_id):
     playlist_id = check_id_format(playlist_id)
     track_id = check_id_format(track_id)
     
-    playlist = get_playlist(
-    pk=playlist_id, 
-    tracks__pk=track_id
-    ).delete()
-    if not playlist:
+    playlist = get_playlist(pk=playlist_id)
+    track = get_track(pk=track_id)
+    if not playlist or not track:
         raise exceptions.NotFound(
             detail=_('Playlist or track not found'),
             code='not_found'
         )
+    playlist.tracks.remove(track)
 
+# TODO
 def send_activation_email(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
@@ -454,5 +457,14 @@ def user_activation_account(uidb64, token):
             ), status=status.HTTP_400_BAD_REQUEST
         )
 
-def user_add_track_playlist(playlist_id):
-    playlist = get_playlist
+def user_add_track_playlist(request, playlist_id):
+    playlist_id = check_id_format(playlist_id)
+    playlist = get_playlist(pk=playlist_id)
+    if not playlist:
+        raise exceptions.NotFound(
+            detail=_('Playlist not found'),
+            code='not_found'
+        )
+
+    serializer = UserPlaylistTrackByIDCreateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
