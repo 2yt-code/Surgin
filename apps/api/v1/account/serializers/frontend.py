@@ -15,7 +15,6 @@ from rest_framework_simplejwt.serializers import (
 )
 
 from apps.api.v1.account.constants import RESERVED_NAMES
-from apps.api.v1.core.artist.models import Artist
 from apps.api.v1.core.artist.serializers import ArtistBasicInformationSerializer
 from apps.api.v1.core.playlist.models import Playlist
 from apps.api.v1.core.track.serializers import TrackBasicInformationSerializer
@@ -214,9 +213,36 @@ class UserPlaylistByIDUpdateSerializer(serializers.ModelSerializer):
         ]
 
 class UserPlaylistsRetrieveSerializer(serializers.ModelSerializer):
+    owner = serializers.SerializerMethodField()
+    collaborators = serializers.SerializerMethodField()
+    tracks = serializers.SerializerMethodField()
+
+    def get_owner(self, obj):
+        user = obj.owner
+        return UserBasicInformationSerializer(instance=user).data
+
+    def get_collaborators(self, obj):
+        users = obj.collaborators.all()
+        return UserBasicInformationSerializer(instance=users, many=True).data
+
+    def get_tracks(self, obj):
+        tracks = obj.tracks.all()
+        return TrackBasicInformationSerializer(instance=tracks, many=True).data
+
     class Meta:
         model = Playlist
-        fields = ['id']
+        fields = [
+            'id',
+            'owner',
+            'collaborators',
+            'name',
+            'description',
+            'baner',
+            'tracks'
+        ]
+
+class UserPlaylistTrackByIDCreateSerializer(serializers.Serializer):
+    track_id = serializers.UUIDField()
 
 class UserPlaylistCreateSerializer(serializers.Serializer): # TODO
     name = serializers.CharField(max_length=50)
