@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django_countries.fields import CountryField
 
+from apps.api.v1.account.managers import ActiveManager
 from apps.api.v1.core.artist.models import Artist
 from apps.api.v1.core.models import BaseModel
 from apps.api.v1.core.track.models import Genre, Track, TrackPreference
@@ -50,6 +51,8 @@ class Membership(BaseModel, AbstractUser):
         _('premium'), 
         default=False
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -84,6 +87,8 @@ class Device(BaseModel):
     ip_address = models.GenericIPAddressField(
         _('ip address')
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('device')
@@ -113,6 +118,8 @@ class FingerPrint(BaseModel):
     last_verified_at = models.DateTimeField(
         auto_now_add=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('fingerprint')
@@ -149,6 +156,8 @@ class UserPreferences(BaseModel):
         related_query_name='user_genre_favorite',
         blank=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('user preference')

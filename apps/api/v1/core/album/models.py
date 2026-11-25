@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.api.v1.core.artist.models import Artist, CreditRole
+from apps.api.v1.core.managers import ActiveManager
 from apps.api.v1.core.models import BaseModel
 from apps.api.v1.core.track.models import Track
 
@@ -57,6 +58,8 @@ class Album(BaseModel):
         _('published'),
         default=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('album')
@@ -88,6 +91,8 @@ class AlbumCredit(BaseModel):
         related_name='album_credits',
         related_query_name='album_credits'
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('album credit')
@@ -103,12 +108,14 @@ class AlbumCredit(BaseModel):
     def __str__(self):
         return f'{self.album} - {self.artist} - {self.role}'
 
-class RecordLabel(models.Model):
+class RecordLabel(BaseModel):
     name = models.CharField(
         _('name'),
         max_length=255, 
         unique=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('record label')

@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.api.v1.core.album.models import Album
+from apps.api.v1.core.managers import ActiveManager
 from apps.api.v1.core.models import BaseModel
 from apps.api.v1.core.track.models import Track
 
@@ -50,6 +51,8 @@ class Playlist(BaseModel):
         related_query_name='playlist_tracks',
         blank=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('playlist')
@@ -100,6 +103,8 @@ class PlaylistFolder(BaseModel):
         related_query_name='folders',
         blank=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('playlist folder')

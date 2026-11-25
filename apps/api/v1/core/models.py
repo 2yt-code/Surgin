@@ -21,6 +21,10 @@ class BaseModel(models.Model):
         default=timezone.now,
         editable=False
     )
+    deleted = models.BooleanField(
+        _('deleted'),
+        default=False
+    )
 
     class Meta:
         abstract = True

@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from apps.api.v1.core.managers import ActiveManager
 from apps.api.v1.core.models import BaseModel
 
 
@@ -46,7 +47,9 @@ class Artist(BaseModel):
         choices=ArtistType.choices,
         default=ArtistType.INDIVIDUAL
     )
-    
+    objects = ActiveManager()
+    all_objects = models.Manager()
+
     class Meta:
         verbose_name = _('artist')
         verbose_name_plural = _('artists')
@@ -81,6 +84,8 @@ class ArtistMembership(BaseModel):
         choices=Role.choices,
         default=Role.EDITOR
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('artist membership')
@@ -121,6 +126,8 @@ class ArtistGroupMember(BaseModel):
         null=True,
         blank=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('artist group member')
@@ -151,6 +158,8 @@ class ArtistFollow(BaseModel):
         related_name='followers',
         related_query_name='followers'
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('artist follow')
@@ -177,6 +186,8 @@ class CreditRole(BaseModel):
         _('description'),
         blank=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('credit role')

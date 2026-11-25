@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.api.v1.core.artist.models import Artist, CreditRole
+from apps.api.v1.core.managers import ActiveManager
 from apps.api.v1.core.models import BaseModel
 
 
@@ -50,9 +51,9 @@ class Track(BaseModel):
     duration = models.DurationField(
         _('duration'),
         db_index=True,
-        # null=True,
-        # blank=True,
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('track')
@@ -77,6 +78,8 @@ class TrackPreference(BaseModel):
         related_query_name='users_disliked',
         blank=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('track preference')
@@ -111,6 +114,8 @@ class TrackCredit(BaseModel):
     credited_as = models.DateField(
         _('credited')
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('track credit')
@@ -151,6 +156,8 @@ class TrackRelease(BaseModel):
         null=True,
         blank=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
     
     class Meta:
         verbose_name = _('track release')
@@ -194,6 +201,8 @@ class Genre(BaseModel):
         _('is active'),
         default=True
     )
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = _('genre')
