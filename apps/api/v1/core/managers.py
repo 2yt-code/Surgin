@@ -6,6 +6,3 @@ class ActiveManager(models.Manager):
         return super().get_queryset().filter(
             deleted=False
         )
-    
-    def get_by_natural_key(self, *args):
-        return self.get_queryset().get_by_natural_key(*args)

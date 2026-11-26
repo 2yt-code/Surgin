@@ -50,6 +50,16 @@ authentication_urls = [
         'auth/activate/<str:uidb64>/<str:token>/',
         api_views.UserActivationAccount.as_view(),
         name='user-activate-account'
+    ),
+    path(
+        'auth/restore/',
+        api_views.UserSendEmailRestoreAccount.as_view(),
+        name='user-send-email-restore-account'
+    ),
+    path(
+        'auth/restore/confirm/',
+        api_views.UserRestoreAccount.as_view(),
+        name='user-restore-account'
     )
 ]
 user_urls = [

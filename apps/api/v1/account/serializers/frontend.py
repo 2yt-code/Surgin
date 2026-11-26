@@ -252,3 +252,10 @@ class UserPlaylistCreateSerializer(serializers.Serializer): # TODO
 class UserActivationAccountSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=40)
     uid = serializers.CharField()
+
+class UserRestoreAccountSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=40)
+    uid = serializers.CharField()
+
+class UserSendEmailRestoreAccountSerializer(serializers.Serializer):
+    email = serializers.EmailField()

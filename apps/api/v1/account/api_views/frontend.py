@@ -44,21 +44,25 @@ from apps.api.v1.account.services import (
     delete_user_playlist_track_by_id, 
     get_user_following, 
     get_user_playlist, 
-    get_user_playlist_by_id, 
+    get_user_playlist_by_id,
+    send_restore_account_email, 
     set_access_token, 
     set_auth_cookies, 
     update_user_playlist_by_id,
     user_activation_account,
     user_add_track_playlist,
     user_change_password,
-    user_logout
+    user_logout,
+    user_restore_account
 )
 from apps.api.v1.account.serializers import (
     RegisterSerializer,
     UserSerializer,
     CustomTokenObtainPairSerializer,
     CustomTokenRefreshSerializer,
-    UserActivationAccountSerializer
+    UserActivationAccountSerializer,
+    UserSendEmailRestoreAccountSerializer,
+    UserRestoreAccountSerializer
 )
 
 
@@ -403,6 +407,25 @@ class CustomResetPasswordConfirm(ResetPasswordConfirm):
 )
 class CustomResetPasswordRequestToken(ResetPasswordRequestToken):
     pass
+
+class UserSendEmailRestoreAccount(views.APIView):
+    permission_classes = (permissions.AllowAny,)
+    
+    def post(self, request):
+        serializer = UserSendEmailRestoreAccountSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        send_restore_account_email(email=serializer.validated_data.get('email'))
+        return Response(status=status.HTTP_200_OK)
+
+class UserRestoreAccount(views.APIView):
+    def post(self, request):
+        serializer = UserRestoreAccountSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user_restore_account(
+            uidb64=serializer.validated_data.get('uid'),
+            token=serializer.validated_data.get('token')
+        )
+        return Response(status=status.HTTP_200_OK)
 
 @extend_schema(tags=['User Followings'])
 class UserFollowingView(views.APIView):

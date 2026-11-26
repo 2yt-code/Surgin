@@ -116,3 +116,10 @@ def get_track(**kwargs):
     except Track.DoesNotExist:
         return None
     return obj
+
+def get_user_by_all_objects_method(**kwargs):
+    try:
+        obj = User.all_objects.get(**kwargs)
+    except User.DoesNotExist:
+        return None
+    return obj

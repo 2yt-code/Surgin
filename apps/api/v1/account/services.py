@@ -1,9 +1,8 @@
 from django.utils import timezone
 from django.db import transaction
-from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
-from django.conf import settings
 from django.core.mail import send_mail
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -28,7 +27,8 @@ from apps.api.v1.account.selectors import (
     get_or_create_blacklisted_token,
     get_outstanding_token, 
     get_playlist,
-    get_user
+    get_user,
+    get_user_by_all_objects_method
 )
 from apps.api.v1.account.selectors import get_track
 from apps.api.v1.account.serializers import (
@@ -468,3 +468,46 @@ def user_add_track_playlist(request, playlist_id):
 
     serializer = UserPlaylistTrackByIDCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
+
+def send_restore_account_email(email):
+    user = get_user_by_all_objects_method(email=email)
+    if not user:
+        return exceptions.NotFound(
+            detail=_('User not found in the archive data'),
+            code='not_found'
+        )
+    
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    restore_link = f'https://{settings.DOMAIN}/account/restore/{uid}/{token}/'
+
+    send_mail(
+        subject=_('Restore user account'),
+        message=restore_link,
+        from_email=settings.EMAIL_HOST_USER,
+        recipient_list=[email]
+    )
+
+def user_restore_account(uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = get_user_by_all_objects_method(pk=uid)
+    except:
+        return Response(
+            dict(
+                detail=_('Invalid link'),
+                code='invalid_link'
+            ), status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if default_token_generator.check_token(user, token):
+        user.deleted = False
+        user.save(update_fields=['deleted'])
+        
+    else:
+        return Response(
+            dict(
+                detail=_('Invalid link'),
+                code='invalid_link'
+            ), status=status.HTTP_400_BAD_REQUEST
+        )
