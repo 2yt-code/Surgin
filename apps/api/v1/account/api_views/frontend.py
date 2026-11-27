@@ -313,7 +313,15 @@ class UserLogoutView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request):
-        user_logout(request)
+        is_valid_logout = user_logout(request)
+        if not is_valid_logout:
+            return Response(
+                dict(
+                    detail=_('Logout unsuccessful'),
+                    code='logout_unsuccessful'
+                ), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
         response = Response(status=status.HTTP_204_NO_CONTENT)
         clear_auth_cookie(response=response)
         return response
@@ -408,15 +416,15 @@ class CustomResetPasswordConfirm(ResetPasswordConfirm):
 class CustomResetPasswordRequestToken(ResetPasswordRequestToken):
     pass
 
-class UserSendEmailRestoreAccount(views.APIView):
-    permission_classes = (permissions.AllowAny,)
-    
+@extend_schema(tags=['User Authentication'])
+class UserSendEmailRestoreAccount(views.APIView):    
     def post(self, request):
         serializer = UserSendEmailRestoreAccountSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         send_restore_account_email(email=serializer.validated_data.get('email'))
         return Response(status=status.HTTP_200_OK)
-
+    
+@extend_schema(tags=['User Authentication'])
 class UserRestoreAccount(views.APIView):
     def post(self, request):
         serializer = UserRestoreAccountSerializer(data=request.data)
