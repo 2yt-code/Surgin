@@ -236,3 +236,6 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 
 # Domain
 DOMAIN = env('DOMAIN')
+
+# Password reset time
+PASSWORD_RESET_TIMEOUT = 60 * 5
