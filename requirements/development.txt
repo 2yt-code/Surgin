@@ -1,3 +1,4 @@
 -r base.txt
 drf-spectacular==0.30.0
 daphne==4.1.2
+django-stubs==6.1.2
