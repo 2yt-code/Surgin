@@ -426,23 +426,16 @@ def user_logout(request: Request):
         ).delete()
 
     except:
-        return Response(
-            dict(
-                detail=_('Logout unsuccessful'),
-                code='logout_unsuccessful'
-            ), status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return False
 
 def user_activation_account(uidb64, token):
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = get_user(pk=uid)
     except:
-        return Response(
-            dict(
-                detail=_('Invalid link'),
-                code='invalid_link'
-            ), status=status.HTTP_400_BAD_REQUEST
+        raise exceptions.ValidationError(
+            detail=_('Invalid link or expiration time has passed'),
+            code='invalid_link'
         )
 
     if default_token_generator.check_token(user, token):
@@ -450,11 +443,9 @@ def user_activation_account(uidb64, token):
         user.save(update_fields=['is_active'])
         
     else:
-        return Response(
-            dict(
-                detail=_('Invalid link'),
-                code='invalid_link'
-            ), status=status.HTTP_400_BAD_REQUEST
+        raise exceptions.ValidationError(
+            detail=_('Invalid link or expiration time has passed'),
+            code='invalid_link'
         )
 
 def user_add_track_playlist(request, playlist_id):
@@ -472,7 +463,7 @@ def user_add_track_playlist(request, playlist_id):
 def send_restore_account_email(email):
     user = get_user_by_all_objects_method(email=email)
     if not user:
-        return exceptions.NotFound(
+        raise exceptions.NotFound(
             detail=_('User not found in the archive data'),
             code='not_found'
         )
@@ -493,11 +484,9 @@ def user_restore_account(uidb64, token):
         uid = urlsafe_base64_decode(uidb64).decode()
         user = get_user_by_all_objects_method(pk=uid)
     except:
-        return Response(
-            dict(
-                detail=_('Invalid link'),
-                code='invalid_link'
-            ), status=status.HTTP_400_BAD_REQUEST
+        raise exceptions.ValidationError(
+            detail=_('Invalid link or expiration time has passed'),
+            code='invalid_link'
         )
 
     if default_token_generator.check_token(user, token):
@@ -505,9 +494,7 @@ def user_restore_account(uidb64, token):
         user.save(update_fields=['deleted'])
         
     else:
-        return Response(
-            dict(
-                detail=_('Invalid link'),
-                code='invalid_link'
-            ), status=status.HTTP_400_BAD_REQUEST
+        raise exceptions.ValidationError(
+            detail=_('Invalid link or expiration time has passed'),
+            code='invalid_link'
         )
