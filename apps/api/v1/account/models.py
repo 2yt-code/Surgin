@@ -5,7 +5,8 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django_countries.fields import CountryField
 
-from apps.api.v1.account.managers import ActiveManager
+from apps.api.v1.account.managers import UserActiveManager
+from apps.api.v1.core.managers import ActiveManager
 from apps.api.v1.core.artist.models import Artist
 from apps.api.v1.core.models import BaseModel
 from apps.api.v1.core.track.models import Genre, Track, TrackPreference
@@ -51,7 +52,7 @@ class Membership(BaseModel, AbstractUser):
         _('premium'), 
         default=False
     )
-    objects = ActiveManager()
+    objects = UserActiveManager()
     all_objects = models.Manager()
 
     USERNAME_FIELD = 'email'
